@@ -1,144 +1,86 @@
 
-const CACHE_NAME = 'ai-calculator-offline-v21';
+const CACHE_NAME = 'abo-suhail-calc-v32-dynamic';
 
-// Core assets that MUST be cached immediately for the app shell to work.
-const STATIC_ASSETS = [
-  './',
+// الملفات الأساسية التي يجب توفرها فوراً (App Shell)
+const CORE_ASSETS = [
   './index.html',
-  'index.html',
-  'offline.html',
-  'manifest.json',
-  'assets/icon.svg',
-  'index.tsx',
-  'App.tsx',
-  'types.ts',
-  'constants.ts',
-  // Components
-  'components/AboutPanel.tsx',
-  'components/Button.tsx',
-  'components/ButtonGrid.tsx',
-  'components/Calculator.tsx',
-  'components/ConfirmationDialog.tsx',
-  'components/Display.tsx',
-  'components/Header.tsx',
-  'components/HistoryPanel.tsx',
-  'components/Icon.tsx',
-  'components/Notification.tsx',
-  'components/Overlay.tsx',
-  'components/SettingsPanel.tsx',
-  'components/SupportPanel.tsx',
-  // Hooks
-  'hooks/useCalculator.tsx',
-  'hooks/useLocalStorage.tsx',
-  // Services
-  'services/calculationEngine.ts',
-  'services/localErrorFixer.ts',
-  'services/geminiService.ts',
-  // External Libraries (CDNs)
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
-  'https://esm.sh/react@18.3.1',
-  'https://esm.sh/react-dom@18.3.1/client'
+  './manifest.json',
+  './offline.html',
+  './assets/icon.svg'
 ];
 
-// Install event: Cache core assets
+// عند التثبيت: احفظ الهيكل الأساسي فقط
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // Force activation immediately
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Pre-caching all source files for offline use');
-      // We use Promise.allSettled to ensure one failed CDN doesn't break the whole install
-      // But for key assets, we really want them.
-      return cache.addAll(STATIC_ASSETS).catch(err => {
-          console.warn("[Service Worker] Some assets failed to cache, but continuing:", err);
-      });
+      return cache.addAll(CORE_ASSETS);
     })
   );
 });
 
-// Activate event: Clean up old caches
+// عند التفعيل: تنظيف الكاش القديم
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then((keys) => {
       return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            console.log('[Service Worker] Clearing old cache:', cache);
-            return caches.delete(cache);
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
           }
         })
       );
-    }).then(() => self.clients.claim()) // Take control of all clients immediately
+    }).then(() => self.clients.claim())
   );
 });
 
-// Fetch event: The core logic for offline support
+// استراتيجية التعامل مع الشبكة
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  const url = new URL(req.url);
 
-  const url = new URL(event.request.url);
-
-  // 1. NAVIGATION REQUESTS (HTML): Always try to serve the App Shell (index.html) from cache first
-  if (event.request.mode === 'navigate') {
+  // 1. تصفح الصفحات (Navigation) -> دائماً ارجع index.html
+  // هذا يحل مشكلة "التطبيق لا يعمل من الأيقونة" ويضمن تحميل التطبيق PWA
+  if (req.mode === 'navigate') {
     event.respondWith(
-      caches.match('./index.html').then((cachedResponse) => {
-        if (cachedResponse) return cachedResponse;
-        // Fallback: Try index.html without ./ or /
-        return caches.match('index.html').then(res => {
-             if (res) return res;
-             return fetch(event.request).catch(() => caches.match('offline.html'));
-        });
+      caches.match('./index.html').then((cached) => {
+        // ارجع النسخة المخبأة من الصفحة الرئيسية، أو حاول جلبها من النت، أو اعرض صفحة الأوفلاين
+        return cached || fetch(req).catch(() => caches.match('./offline.html'));
       })
     );
     return;
   }
 
-  // 2. EXTERNAL ASSETS (CDNs): Cache First, Revalidate in background (Stale-While-Revalidate-ish)
-  // or simple Cache First if immutable.
-  if (url.origin !== self.location.origin) {
-      event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) return cachedResponse;
-            return fetch(event.request).then(res => {
-                // Cache valid responses
-                if (res && res.status === 200) {
-                    const resClone = res.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, resClone));
-                }
-                return res;
-            }).catch(() => {
-                // If offline and not in cache, nothing we can do for external scripts
-                return new Response('', { status: 408, statusText: 'Request Timeout' }); 
-            });
-        })
-      );
-      return;
-  }
-
-  // 3. LOCAL ASSETS: Cache First, then Network
+  // 2. باقي الملفات (صور، سكربتات، خطوط) -> استراتيجية Cache First with Dynamic Caching
+  // ابحث في الكاش أولاً، إذا لم تجد، احمل من النت واحفظ نسخة للمستقبل
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
+    caches.match(req).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
 
-      return fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-             const resClone = networkResponse.clone();
-             caches.open(CACHE_NAME).then(cache => cache.put(event.request, resClone));
-          }
+      return fetch(req).then((networkResponse) => {
+        // تأكد من أن الاستجابة صالحة قبل تخزينها
+        // (نسمح بتخزين opaque responses للمصادر الخارجية مثل الخطوط)
+        if (!networkResponse || networkResponse.status !== 200 && networkResponse.type !== 'opaque') {
           return networkResponse;
-      }).catch((err) => {
-          console.error("[Service Worker] Fetch failed:", err);
-          // Optional: return a placeholder image if it was an image request
-          throw err;
+        }
+
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          try {
+             // استخدام put لتخزين الملف ديناميكياً
+             cache.put(req, responseToCache);
+          } catch (err) {
+            // تجاهل أخطاء التخزين (مثل quotas)
+          }
+        });
+
+        return networkResponse;
+      }).catch(() => {
+        // في حال فشل الشبكة وعدم وجود الملف في الكاش، لا نفعل شيئاً (ستظهر أيقونة صورة مكسورة مثلاً)
+        // لكن التطبيق نفسه سيبقى يعمل
       });
     })
   );
-});
-
-// Listen for skip waiting message
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
 });
