@@ -161,6 +161,11 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
       if (lastChar === '(' && ['+', '×', '÷', '%', ')'].includes(value)) {
           return prev;
       }
+
+      // Rule: Prevent duplicate percentage signs
+      if (value === '%' && lastChar === '%') {
+        return prev;
+      }
       
       // Rule: Auto-insert multiplication after a closing parenthesis if a number/paren/ans follows.
       if (lastChar === ')' && !operators.concat(['%', ')', '.']).includes(value)) {

@@ -139,6 +139,18 @@ const Display: React.FC<DisplayProps> = ({ input, taxSettings, error, aiSuggesti
     
     return content;
   };
+
+  // Calculate Dynamic Font Size based on length
+  const getFontSize = (text: string) => {
+      const len = text.length;
+      if (len > 20) return 'text-2xl'; // Very small for huge numbers
+      if (len > 15) return 'text-3xl';
+      if (len > 11) return 'text-4xl';
+      if (len > 9) return 'text-5xl';
+      return 'text-6xl'; // Default large size
+  };
+
+  const fontSizeClass = getFontSize(liveResult);
   
   return (
     <div className="relative p-4 bg-[var(--bg-display)] rounded-[25px] mb-4 border border-[var(--border-primary)] shadow-[inset_0_4px_10px_rgba(0,0,0,0.08)] min-h-[220px] flex flex-col justify-between">
@@ -158,7 +170,7 @@ const Display: React.FC<DisplayProps> = ({ input, taxSettings, error, aiSuggesti
                 renderHighlightedExpression()
             )}
         </div>
-        <div key={liveResult} className="text-6xl mt-auto font-bold text-center direction-ltr overflow-x-auto whitespace-nowrap text-[var(--text-display)] scrollbar-hide leading-tight" style={{ textShadow: 'var(--display-text-shadow, none)' }}>
+        <div key={liveResult} className={`${fontSizeClass} mt-auto font-bold text-center direction-ltr overflow-x-auto whitespace-nowrap text-[var(--text-display)] scrollbar-hide leading-tight transition-all duration-200`} style={{ textShadow: 'var(--display-text-shadow, none)' }}>
           <span className="inline-block animate-pop-in">{liveResult}</span>
         </div>
       </div>

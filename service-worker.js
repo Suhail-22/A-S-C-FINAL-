@@ -1,7 +1,7 @@
 
-const CACHE_NAME = 'ai-calculator-v7';
+const CACHE_NAME = 'ai-calculator-v8';
 const URLS_TO_CACHE = [
-  '/',
+  './',
   'index.html',
   'index.tsx',
   'manifest.json',
@@ -9,10 +9,6 @@ const URLS_TO_CACHE = [
   'types.ts',
   'constants.ts',
   'assets/icon.svg',
-  'assets/icon-192.png',
-  'assets/icon-512.png',
-  'assets/screenshot-narrow.png',
-  'assets/screenshot-wide.png',
   'components/AboutPanel.tsx',
   'components/Button.tsx',
   'components/ButtonGrid.tsx',
@@ -57,17 +53,11 @@ self.addEventListener('fetch', event => {
 
         return fetch(event.request).then(
           (networkResponse) => {
-            // Check if we received a valid response
             if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === 'opaque') {
               return networkResponse;
             }
 
-            // IMPORTANT: Clone the response. A response is a stream
-            // and because we want the browser to consume the response
-            // as well as the cache consuming the response, we need
-            // to clone it so we have two streams.
             const responseToCache = networkResponse.clone();
-
             caches.open(CACHE_NAME)
               .then(cache => {
                 cache.put(event.request, responseToCache);
