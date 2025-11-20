@@ -1,50 +1,26 @@
 
-const CACHE_NAME = 'abo-suhail-calc-v35-full';
+const CACHE_NAME = 'abo-suhail-calc-v37-production';
 
-// القائمة الكاملة للملفات التي يجب تحميلها فوراً ليعمل التطبيق دون إنترنت
+// الملفات الثابتة فقط التي نضمن وجودها دائماً
+// ملاحظة: لا نضع ملفات .tsx أو .ts هنا لأنها تختفي بعد عملية البناء (Build)
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './offline.html',
-  './assets/icon.svg',
-  './index.tsx',
-  './App.tsx',
-  './types.ts',
-  './constants.ts',
-  './hooks/useCalculator.tsx',
-  './hooks/useLocalStorage.tsx',
-  './services/calculationEngine.ts',
-  './services/localErrorFixer.ts',
-  './components/Calculator.tsx',
-  './components/Header.tsx',
-  './components/Display.tsx',
-  './components/ButtonGrid.tsx',
-  './components/Button.tsx',
-  './components/Icon.tsx',
-  './components/HistoryPanel.tsx',
-  './components/SettingsPanel.tsx',
-  './components/SupportPanel.tsx',
-  './components/AboutPanel.tsx',
-  './components/Overlay.tsx',
-  './components/Notification.tsx',
-  './components/ConfirmationDialog.tsx'
+  './assets/icon.svg'
 ];
 
-// عند التثبيت: احفظ كل الملفات الأساسية
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  self.skipWaiting(); // تفعيل التحديث فوراً
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // نستخدم addAll لتحميل كل الملفات دفعة واحدة
-      return cache.addAll(CORE_ASSETS).catch(err => {
-         console.error('Failed to cache core assets:', err);
-      });
+      // محاولة حفظ الملفات الأساسية
+      return cache.addAll(CORE_ASSETS);
     })
   );
 });
 
-// عند التفعيل: تنظيف الكاش القديم
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -59,41 +35,59 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// استراتيجية التعامل مع الشبكة
 self.addEventListener('fetch', (event) => {
   const req = event.request;
+  const url = new URL(req.url);
 
-  // 1. تصفح الصفحات (Navigation) -> دائماً ارجع index.html
+  // 1. طلبات التنقل (فتح الصفحة الرئيسية)
   if (req.mode === 'navigate') {
     event.respondWith(
-      caches.match('./index.html').then((cached) => {
-        return cached || fetch(req).catch(() => caches.match('./offline.html'));
-      })
+      fetch(req)
+        .catch(() => {
+          // إذا فشل النت، ابحث في الكاش عن الصفحة الرئيسية
+          return caches.match('./index.html');
+        })
+        .then((response) => {
+          // إذا لم توجد الصفحة في الكاش أيضاً (نادر جداً)، اعرض صفحة الأوفلاين
+          return response || caches.match('./offline.html');
+        })
     );
     return;
   }
 
-  // 2. باقي الملفات -> Cache First
+  // 2. طلبات الملفات (JS, CSS, Images, Fonts)
+  // استراتيجية: Stale-While-Revalidate معدلة
+  // (حاول تجيب من الكاش، وفي نفس الوقت حدث من النت للمرة الجاية، لو مفيش نت استخدم الكاش)
   event.respondWith(
     caches.match(req).then((cachedResponse) => {
+      // إذا الملف موجود في الكاش، رجعه فوراً (سرعة قصوى)
       if (cachedResponse) {
+        // لكن في الخلفية، حاول تحدثه من النت
+        fetch(req).then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+                const responseToCache = networkResponse.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(req, responseToCache);
+                });
+            }
+        }).catch(() => {}); // لو مفيش نت، مش مشكلة، عندنا النسخة القديمة
+        
         return cachedResponse;
       }
 
+      // إذا الملف مش في الكاش، هاته من النت واحفظه
       return fetch(req).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 && networkResponse.type !== 'opaque') {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
           return networkResponse;
         }
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
-            try {
-                cache.put(req, responseToCache);
-            } catch (e) {}
+          cache.put(req, responseToCache);
         });
         return networkResponse;
       }).catch(() => {
-        // إذا فشل النت ولم يكن الملف في الكاش (حالة نادرة جداً مع الـ Pre-caching)
-        // يمكن ارجاع صورة بديلة أو ملف فارغ حسب الحاجة
+         // فشل تام (لا كاش ولا نت) للصورة أو الملف
+         // يمكن إرجاع صورة بديلة هنا إذا أردت
       });
     })
   );
