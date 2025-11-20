@@ -5,7 +5,7 @@
   "description": "آلة حاسبة متقدمة وذكية لنظام أندرويد و ويندوز و ايفون، مع سجل عمليات، حسابات ضريبية، وتخصيص كامل.",
   "id": "abosuhail-calculator",
   "scope": "/",
-  "start_url": "/index.html",
+  "start_url": "/",
   "icons": [
     {
       "src": "assets/icon.svg",
@@ -60,7 +60,7 @@
       "name": "سجل العمليات",
       "short_name": "السجل",
       "description": "عرض سجل العمليات المحفوظة",
-      "url": "/index.html?history=true",
+      "url": "/?history=true",
       "icons": [
         {
           "src": "assets/icon.svg",
@@ -71,7 +71,7 @@
     }
   ],
   "share_target": {
-    "action": "/index.html",
+    "action": "/",
     "method": "GET",
     "params": {
       "text": "text"

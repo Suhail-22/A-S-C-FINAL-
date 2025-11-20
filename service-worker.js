@@ -1,33 +1,33 @@
 
-const CACHE_NAME = 'abo-suhail-calc-v37-production';
+const CACHE_NAME = 'abo-suhail-calc-v40-dynamic';
 
-// الملفات الثابتة فقط التي نضمن وجودها دائماً
-// ملاحظة: لا نضع ملفات .tsx أو .ts هنا لأنها تختفي بعد عملية البناء (Build)
-const CORE_ASSETS = [
+// Files we explicitly want to cache immediately on install
+const PRECACHE_URLS = [
   './',
   './index.html',
   './manifest.json',
-  './offline.html',
-  './assets/icon.svg'
+  './assets/icon.svg',
+  './offline.html'
 ];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // تفعيل التحديث فوراً
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // محاولة حفظ الملفات الأساسية
-      return cache.addAll(CORE_ASSETS);
+      return cache.addAll(PRECACHE_URLS).catch(err => {
+          console.warn('Precache failed for some items:', err);
+      });
     })
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
           }
         })
       );
@@ -36,59 +36,53 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
+  const request = event.request;
+  const url = new URL(request.url);
 
-  // 1. طلبات التنقل (فتح الصفحة الرئيسية)
-  if (req.mode === 'navigate') {
+  // 1. Navigation requests (HTML pages)
+  // Strategy: Network First, falling back to Cache, falling back to Offline Page
+  // This ensures users get the latest version if online, but app works if offline.
+  if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
-        .catch(() => {
-          // إذا فشل النت، ابحث في الكاش عن الصفحة الرئيسية
-          return caches.match('./index.html');
-        })
+      fetch(request)
         .then((response) => {
-          // إذا لم توجد الصفحة في الكاش أيضاً (نادر جداً)، اعرض صفحة الأوفلاين
-          return response || caches.match('./offline.html');
+          // If network fetch succeeds, cache it and return it
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try cache
+          return caches.match(request).then((cachedResponse) => {
+             if (cachedResponse) return cachedResponse;
+             // If not in cache, try index.html (for SPA routing)
+             return caches.match('./index.html').then(indexResp => {
+                 return indexResp || caches.match('./offline.html');
+             });
+          });
         })
     );
     return;
   }
 
-  // 2. طلبات الملفات (JS, CSS, Images, Fonts)
-  // استراتيجية: Stale-While-Revalidate معدلة
-  // (حاول تجيب من الكاش، وفي نفس الوقت حدث من النت للمرة الجاية، لو مفيش نت استخدم الكاش)
+  // 2. Asset requests (JS, CSS, Images, Fonts)
+  // Strategy: Stale-While-Revalidate
+  // Return cached version immediately (fast!), then update cache in background.
   event.respondWith(
-    caches.match(req).then((cachedResponse) => {
-      // إذا الملف موجود في الكاش، رجعه فوراً (سرعة قصوى)
-      if (cachedResponse) {
-        // لكن في الخلفية، حاول تحدثه من النت
-        fetch(req).then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-                const responseToCache = networkResponse.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(req, responseToCache);
-                });
-            }
-        }).catch(() => {}); // لو مفيش نت، مش مشكلة، عندنا النسخة القديمة
-        
-        return cachedResponse;
-      }
-
-      // إذا الملف مش في الكاش، هاته من النت واحفظه
-      return fetch(req).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
+    caches.match(request).then((cachedResponse) => {
+      const fetchPromise = fetch(request).then((networkResponse) => {
+        // Update cache with new version
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
         }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(req, responseToCache);
-        });
         return networkResponse;
       }).catch(() => {
-         // فشل تام (لا كاش ولا نت) للصورة أو الملف
-         // يمكن إرجاع صورة بديلة هنا إذا أردت
+          // Network failed, nothing to do (we hopefully returned cachedResponse)
       });
+
+      // Return cached response if available, otherwise wait for network
+      return cachedResponse || fetchPromise;
     })
   );
 });
