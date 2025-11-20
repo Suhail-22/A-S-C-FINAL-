@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'ai-calculator-v9';
+const CACHE_NAME = 'ai-calculator-v10';
 const URLS_TO_CACHE = [
   './',
   'index.html',
@@ -34,12 +34,31 @@ const URLS_TO_CACHE = [
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting(); // Force activation immediately
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Opened cache');
         return cache.addAll(URLS_TO_CACHE);
       })
+  );
+});
+
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    Promise.all([
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheWhitelist.indexOf(cacheName) === -1) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      self.clients.claim() // Take control of all clients immediately
+    ])
   );
 });
 
@@ -67,22 +86,6 @@ self.addEventListener('fetch', event => {
           }
         );
       })
-  );
-});
-
-
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
   );
 });
 
