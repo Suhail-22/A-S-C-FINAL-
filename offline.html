@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لا يوجد اتصال بالإنترنت</title>
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #0F172A;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        h1 { margin-bottom: 0.5rem; color: #FFD700; }
+        p { color: #B0C4DE; margin-bottom: 2rem; }
+        button {
+            background: linear-gradient(180deg, #00C853, #009624);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+        }
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="icon">📡❌</div>
+    <h1>أنت غير متصل</h1>
+    <p>يبدو أنك فقدت الاتصال بالإنترنت.<br>لكن لا تقلق، الآلة الحاسبة ستعمل بمجرد تحميلها مرة واحدة.</p>
+    <button onclick="window.location.reload()">إعادة المحاولة</button>
+</body>
+</html>
