@@ -1,10 +1,11 @@
+
 {
   "short_name": "Abo Suhail Calc",
   "name": "Abo Suhail Calculator",
   "description": "آلة حاسبة متقدمة وذكية لنظام أندرويد و ويندوز و ايفون، مع سجل عمليات، حسابات ضريبية، وتخصيص كامل.",
   "id": "abosuhail-calculator",
-  "scope": "/",
-  "start_url": "/",
+  "scope": "./",
+  "start_url": "./index.html",
   "icons": [
     {
       "src": "assets/icon.svg",
@@ -59,7 +60,7 @@
       "name": "سجل العمليات",
       "short_name": "السجل",
       "description": "عرض سجل العمليات المحفوظة",
-      "url": "/?history=true",
+      "url": "./index.html?history=true",
       "icons": [
         {
           "src": "assets/icon.svg",
@@ -72,7 +73,7 @@
       "name": "عملية جديدة",
       "short_name": "جديد",
       "description": "بدء عملية حسابية جديدة",
-      "url": "/",
+      "url": "./index.html",
       "icons": [
         {
           "src": "assets/icon.svg",
@@ -83,7 +84,7 @@
     }
   ],
   "share_target": {
-    "action": "/",
+    "action": "./index.html",
     "method": "GET",
     "params": {
       "text": "text"

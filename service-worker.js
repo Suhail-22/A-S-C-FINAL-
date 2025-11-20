@@ -1,11 +1,10 @@
 
-const CACHE_NAME = 'ai-calculator-offline-v18';
+const CACHE_NAME = 'ai-calculator-offline-v19';
 
 // Core assets that MUST be cached immediately for the app shell to work.
-// Since we are not using a bundler, we must explicitly list all source files here
-// to ensure they are available offline.
 const STATIC_ASSETS = [
   './',
+  './index.html',
   'index.html',
   'offline.html',
   'manifest.json',
@@ -35,7 +34,8 @@ const STATIC_ASSETS = [
   'services/calculationEngine.ts',
   'services/localErrorFixer.ts',
   'services/geminiService.ts',
-  // External Libraries (CDNs)
+  // External Libraries (CDNs) - NOTE: CDNs might fail offline if not visited previously, 
+  // but the app shell (index.html) should still load.
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
   'https://esm.sh/react@18.3.1',
@@ -74,34 +74,51 @@ self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
+  // STRATEGY: App Shell (Network-First, falling back to Cache for data / Cache-First for assets)
+  
+  // 1. NAVIGATION REQUESTS (HTML): Always try to serve the App Shell (index.html) from cache first
+  // This ensures that if the user is offline, the app opens immediately.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match('./index.html').then((cachedResponse) => {
+        // Return cached index.html if available (Offline capability)
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+        // Fallback: Try index.html without ./
+        return caches.match('index.html').then(res => {
+             if (res) return res;
+             // If not in cache, try network
+             return fetch(event.request).catch(() => {
+                 // If network fails, show offline page
+                 return caches.match('offline.html');
+             });
+        });
+      })
+    );
+    return;
+  }
+
+  // 2. ALL OTHER ASSETS (JS, CSS, Images): Cache First, then Network
   event.respondWith(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
-      
-      // 1. Try to get from cache first (Instant loading)
       const cachedResponse = await cache.match(event.request);
+      
       if (cachedResponse) {
           return cachedResponse;
       }
 
-      // 2. If not in cache, fetch from network
       try {
           const networkResponse = await fetch(event.request);
-          
           // Cache new files for next time (dynamic caching)
-          // Ensure valid response and handled scheme
           if (networkResponse && networkResponse.status === 200 && (event.request.url.startsWith('http') || event.request.url.startsWith('https'))) {
              cache.put(event.request, networkResponse.clone());
           }
           return networkResponse;
       } catch (error) {
-          // 3. Network failed (Offline)
-          // If it's a navigation request (HTML), show offline page
-          if (event.request.mode === 'navigate') {
-              const offlinePage = await cache.match('offline.html');
-              if (offlinePage) return offlinePage;
-          }
-          // For other assets, we can't do much if they aren't cached
+          // Network failed and resource not in cache
+          // For images, we could return a placeholder, but for code we just fail.
           throw error;
       }
     })()
