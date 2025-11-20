@@ -46,9 +46,7 @@ function App() {
 
   useEffect(() => {
     const handler = (e: any) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
     };
 
@@ -59,9 +57,7 @@ function App() {
 
   const handleInstallClick = useCallback(async () => {
     if (!deferredPrompt) return;
-    // Show the install prompt
     deferredPrompt.prompt();
-    // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
       setDeferredPrompt(null);
@@ -301,9 +297,12 @@ function App() {
       return calculator.history.filter(item => item.date === dateString).length;
   }, [calculator.history]);
 
+  // Orientation handling:
+  // If portrait setting is forced, constrain width.
+  // If auto, we allow full width on landscape (md screen and up)
   const orientationStyle = calculator.settings.orientation === 'portrait' 
     ? 'max-w-[460px] mx-auto border-x border-[var(--border-secondary)] shadow-2xl' 
-    : 'w-full';
+    : 'w-full landscape:max-w-none portrait:max-w-[460px] portrait:mx-auto';
 
   return (
     <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ background: 'var(--bg-primary-gradient)' }}>
@@ -317,7 +316,8 @@ function App() {
              <button onClick={onUpdateAccepted} className="bg-white text-blue-600 font-bold py-1.5 px-3 rounded-lg text-sm hover:bg-gray-200 transition-colors">تثبيت</button>
            </div>
         )}
-        <div className={calculator.settings.orientation === 'portrait' ? 'w-full px-4' : 'max-w-md w-full'}>
+        {/* Calculator Wrapper: in landscape mode (on larger screens or rotated phones), let it fill width */}
+        <div className={`transition-all duration-300 ${calculator.settings.orientation === 'portrait' ? 'w-full px-4' : 'w-full h-full px-4 landscape:px-8'}`}>
              <Calculator
               calculator={calculator}
               onToggleSettings={() => setIsSettingsOpen(v => !v)}

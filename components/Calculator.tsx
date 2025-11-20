@@ -53,39 +53,48 @@ const Calculator: React.FC<CalculatorProps> = ({ calculator, onToggleSettings, o
   };
 
   return (
-    <div className="relative max-w-md w-full z-10 animate-container-in mx-auto">
+    <div className="relative w-full z-10 animate-container-in mx-auto h-full">
       <div 
-          className="bg-[var(--bg-calculator)] rounded-[var(--button-radius)] p-4 w-full relative backdrop-blur-xl z-10 border border-[var(--border-primary)]"
+          className="bg-[var(--bg-calculator)] rounded-[var(--button-radius)] p-4 w-full h-full relative backdrop-blur-xl z-10 border border-[var(--border-primary)] flex flex-col landscape:flex-row-reverse landscape:gap-6"
           style={{ boxShadow: 'var(--calculator-shadow, none)' }}
         >
-        <Header
-          taxSettings={taxSettings}
-          onToggleSettings={onToggleSettings}
-          onShare={handleShare}
-          onToggleHistory={onToggleHistory}
-          historyCount={todayCount}
-          entryCountDisplay={entryCount}
-        />
-        <Display
-          input={input}
-          taxSettings={taxSettings}
-          error={error}
-          aiSuggestion={aiSuggestion}
-          onApplyAiFix={actions.applyAiFix}
-          isCalculationExecuted={calculator.isCalculationExecuted}
-          lastExpression={lastExpression}
-          onUpdateInput={actions.updateInput}
-        />
-        <ButtonGrid
-          onAppend={actions.append}
-          onClear={actions.clearAll}
-          onBackspace={actions.backspace}
-          onCalculate={actions.calculate}
-          onToggleSign={actions.toggleSign}
-          onParenthesis={actions.handleParenthesis}
-          onAppendAnswer={actions.appendAnswer}
-          layout={calculator.settings.buttonLayout}
-        />
+        {/* Left Side (in Landscape): Header + Display */}
+        {/* Note: In RTL + flex-row-reverse, this comes visually on the LEFT */}
+        <div className="flex flex-col landscape:w-1/2 landscape:h-full justify-center">
+            <Header
+            taxSettings={taxSettings}
+            onToggleSettings={onToggleSettings}
+            onShare={handleShare}
+            onToggleHistory={onToggleHistory}
+            historyCount={todayCount}
+            entryCountDisplay={entryCount}
+            />
+            <Display
+            input={input}
+            taxSettings={taxSettings}
+            error={error}
+            aiSuggestion={aiSuggestion}
+            onApplyAiFix={actions.applyAiFix}
+            isCalculationExecuted={calculator.isCalculationExecuted}
+            lastExpression={lastExpression}
+            onUpdateInput={actions.updateInput}
+            />
+        </div>
+
+        {/* Right Side (in Landscape): Button Grid */}
+        {/* Note: In RTL + flex-row-reverse, this comes visually on the RIGHT */}
+        <div className="landscape:w-1/2 landscape:h-full landscape:flex landscape:flex-col landscape:justify-center">
+            <ButtonGrid
+            onAppend={actions.append}
+            onClear={actions.clearAll}
+            onBackspace={actions.backspace}
+            onCalculate={actions.calculate}
+            onToggleSign={actions.toggleSign}
+            onParenthesis={actions.handleParenthesis}
+            onAppendAnswer={actions.appendAnswer}
+            layout={calculator.settings.buttonLayout}
+            />
+        </div>
       </div>
     </div>
   );
