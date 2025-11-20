@@ -28,6 +28,7 @@ function App() {
   const [notification, setNotification] = useState({ message: '', show: false });
   const [appUpdate, setAppUpdate] = useState<{ available: boolean; registration: ServiceWorkerRegistration | null }>({ available: false, registration: null });
   const [confirmation, setConfirmation] = useState<ConfirmationState>({ isOpen: false, onConfirm: () => {}, onCancel: () => {}, title: '', message: '' });
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const [theme, setTheme] = useLocalStorage<string>('calcTheme_v3', 'system');
   const [fontFamily, setFontFamily] = useLocalStorage<string>('calcFontFamily_v2', 'Tajawal');
@@ -42,6 +43,30 @@ function App() {
   }, []);
   
   const calculator = useCalculator({ showNotification });
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = useCallback(async () => {
+    if (!deferredPrompt) return;
+    // Show the install prompt
+    deferredPrompt.prompt();
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  }, [deferredPrompt]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -320,6 +345,8 @@ function App() {
         onOpenSupport={() => { closeAllPanels(); setIsSupportOpen(true); }}
         onShowAbout={() => { closeAllPanels(); setIsAboutOpen(true); }}
         onCheckForUpdates={onCheckForUpdates}
+        deferredPrompt={deferredPrompt}
+        onInstallApp={handleInstallClick}
       />
       <HistoryPanel
         isOpen={isHistoryOpen}

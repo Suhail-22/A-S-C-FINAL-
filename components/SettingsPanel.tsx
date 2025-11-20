@@ -29,6 +29,8 @@ interface SettingsPanelProps {
   onOpenSupport: () => void;
   onShowAbout: () => void;
   onCheckForUpdates: () => void;
+  deferredPrompt?: any;
+  onInstallApp?: () => void;
 }
 
 const convertArabicNumerals = (str: string | number): string => {
@@ -38,7 +40,7 @@ const convertArabicNumerals = (str: string | number): string => {
         .replace(/[۰۱۲۳۴۵۶۷۸۹]/g, d => String.fromCharCode(d.charCodeAt(0) - 1776));
 };
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, onOpenSupport, onShowAbout, onCheckForUpdates }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, onOpenSupport, onShowAbout, onCheckForUpdates, deferredPrompt, onInstallApp }) => {
   const { vibrationEnabled, setVibrationEnabled, soundEnabled, setSoundEnabled, taxSettings, setTaxSettings, maxHistory, setMaxHistory, orientation, setOrientation } = settings;
   
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -63,6 +65,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
         <h3 className="text-[var(--accent-color)] text-2xl font-bold">⚙️ الإعدادات</h3>
         <button onClick={onClose} className="text-2xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">✕</button>
       </div>
+      
+      {deferredPrompt && onInstallApp && (
+        <div className="mb-6 animate-bounce-in-up">
+           <button onClick={onInstallApp} className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl py-3 font-bold text-lg shadow-lg hover:from-blue-700 transition-all flex items-center justify-center gap-2">
+             📲 تثبيت التطبيق على الجهاز
+           </button>
+        </div>
+      )}
+
       <div className="mb-6">
         <h4 className="text-lg font-semibold text-[var(--text-secondary)] mb-3">🎨 المظهر</h4>
         <div className="grid grid-cols-3 gap-2 p-1 rounded-xl bg-[var(--bg-inset)]">

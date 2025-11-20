@@ -4,13 +4,24 @@
   "description": "آلة حاسبة متقدمة وذكية لنظام أندرويد و ويندوز و ايفون، مع سجل عمليات، حسابات ضريبية، وتخصيص كامل.",
   "id": "/",
   "scope": "/",
-  "start_url": "./?mode=pwa",
+  "start_url": "./",
   "icons": [
     {
       "src": "assets/icon.svg",
       "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any maskable"
+      "sizes": "any"
+    },
+    {
+      "src": "assets/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "display": "standalone",
