@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface AboutPanelProps {
@@ -25,7 +26,7 @@ const AboutPanel: React.FC<AboutPanelProps> = ({ isOpen, onClose }) => {
           </ul>
       </div>
       <div className="text-center text-sm text-gray-400 dark:text-gray-500">
-        الإصدار 1.7.0 © 2025
+        الإصدار 1.7.1 © 2025
       </div>
     </div>
   );
