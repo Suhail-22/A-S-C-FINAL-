@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'ai-calculator-v8';
+const CACHE_NAME = 'ai-calculator-v9';
 const URLS_TO_CACHE = [
   './',
   'index.html',
