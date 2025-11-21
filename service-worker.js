@@ -1,4 +1,4 @@
-const CACHE_NAME = 'abo-suhail-offline-v5.0.1';
+const CACHE_NAME = 'abo-suhail-offline-v5.0.2';
 
 const URLS_TO_CACHE = [
   './',
@@ -36,7 +36,9 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
+        // Allow caching of opaque responses (type === 'opaque') which happens with CDNs (no-cors)
+        // This is critical for Tailwind/React to work offline without specific CORS headers on the server
+        if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
            const clone = networkResponse.clone();
            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }

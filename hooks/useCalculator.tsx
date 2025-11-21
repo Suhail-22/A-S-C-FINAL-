@@ -118,7 +118,7 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     }
     vibrate(20);
 
-    // Reset states
+    // Clear error state if exists
     if (error) {
         setError(null);
         setAiSuggestion(null);
@@ -133,6 +133,7 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     setAiSuggestion(null);
     setLastExpression(null);
 
+    // If calculation was just executed, start new or append operator
     if (calculationExecuted) {
       const isOperator = ['+', '-', '×', '÷'].includes(value);
       setInput(isOperator ? input + value : value);
@@ -141,63 +142,41 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     }
 
     setInput(prev => {
-      // --- Logic for Start of Input ---
-      if (prev === '0') {
-        if (['0', '00', '000'].includes(value)) return '0'; // Ignore multiple zeros at start
-        if (value === '.') return '0.';
-        if (['+', '-', '×', '÷'].includes(value)) return '0' + value; // Allow 0+
-        if (['%', ')'].includes(value)) return '0'; // Ignore invalid starters
-        return value; // Replace 0 with the new number/paren
-      }
-
       const lastChar = prev.slice(-1);
       const operators = ['+', '-', '×', '÷'];
-      const isLastOperator = operators.includes(lastChar);
-      const isInputOperator = operators.includes(value);
+      const isLastOp = operators.includes(lastChar);
+      const isInputOp = operators.includes(value);
 
-      // --- Logic 1: Operator Replacement ---
-      // If last was operator and new is operator, replace it.
-      if (isLastOperator && isInputOperator) {
+      // 1. Operator Replacement Logic
+      if (isLastOp && isInputOp) {
           return prev.slice(0, -1) + value;
       }
 
-      // --- Logic 2: Prevent Invalid Sequences ---
-      // Prevent % right after an operator (e.g., +%)
-      if (isLastOperator && value === '%') {
-          return prev;
-      }
+      // 2. Prevent invalid sequences
+      if (isLastOp && value === '%') return prev; // No % after operator
+      if (lastChar === '(' && (isInputOp || value === '%' || value === ')')) return prev; // No operator/%/) after (
+      if (lastChar === '%' && value === '%') return prev; // No double %
 
-      // Prevent double %
-      if (lastChar === '%' && value === '%') {
-          return prev;
-      }
+      // 3. Handle Leading Zeros in Current Number Segment
+      // Split by operators/parens to find the number being typed right now
+      const segments = prev.split(/[+\-×÷()]/);
+      const currentNum = segments[segments.length - 1];
 
-      // Prevent operators right after open parenthesis
-      if (lastChar === '(' && (isInputOperator || value === '%' || value === ')')) {
-          return prev;
-      }
-
-      // --- Logic 3: Handle "Zero Segments" (e.g. 5+0 -> 5+00) ---
-      // Split by operators or parens to get the current number segment being typed
-      const parts = prev.split(/([+\-×÷()])/);
-      const currentSegment = parts[parts.length - 1];
-
-      // If the current segment is exactly "0"
-      if (currentSegment === '0') {
-          // If user types 0, 00, 000 -> Ignore
-          if (['0', '00', '000'].includes(value)) {
-              return prev;
-          }
-          // If user types a digit (1-9) or open paren -> Replace the 0
-          // e.g., 5+0 + 5 -> 5+5
-          if (!isInputOperator && value !== '.' && value !== '%' && value !== ')') {
+      if (currentNum === '0') {
+          // If we have a lone zero, and user types 0, 00, 000 -> Ignore
+          if (value === '0' || value === '00' || value === '000') return prev;
+          
+          // If user types a non-zero digit (1-9), replace the lone zero
+          if (/[1-9]/.test(value)) {
               return prev.slice(0, -1) + value;
           }
+          
+          // If user types decimal point, allow it (0.)
+          if (value === '.') return prev + '.';
       }
 
-      // --- Logic 4: Implicit Multiplication ---
-      // Auto-insert × if typing number/paren after closing paren: )5 -> )×5
-      if (lastChar === ')' && !isInputOperator && value !== ')' && value !== '%' && value !== '.') {
+      // 4. Implicit Multiplication (e.g. )5 -> )×5)
+      if (lastChar === ')' && !isInputOp && value !== ')' && value !== '%' && value !== '.') {
           return prev + '×' + value;
       }
       
