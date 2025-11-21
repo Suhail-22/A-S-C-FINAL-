@@ -26,6 +26,8 @@ interface SettingsPanelProps {
   setFontScale: (scale: number) => void;
   buttonTextColor: string | null;
   setButtonTextColor: (color: string | null) => void;
+  borderColor: string | null;
+  setBorderColor?: (color: string | null) => void;
   onOpenSupport: () => void;
   onShowAbout: () => void;
   onCheckForUpdates: () => void;
@@ -40,7 +42,7 @@ const convertArabicNumerals = (str: string | number): string => {
         .replace(/[۰۱۲۳۴۵۶۷۸۹]/g, d => String.fromCharCode(d.charCodeAt(0) - 1776));
 };
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, onOpenSupport, onShowAbout, onCheckForUpdates, deferredPrompt, onInstallApp }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, borderColor, setBorderColor, onOpenSupport, onShowAbout, onCheckForUpdates, deferredPrompt, onInstallApp }) => {
   const { vibrationEnabled, setVibrationEnabled, soundEnabled, setSoundEnabled, taxSettings, setTaxSettings, maxHistory, setMaxHistory, orientation, setOrientation } = settings;
   
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -79,7 +81,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
         <div className="grid grid-cols-3 gap-2 p-1 rounded-xl bg-[var(--bg-inset)]">
           <button onClick={() => onThemeChange('light')} className={`py-2 rounded-lg text-sm transition-all ${theme === 'light' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold' : ''}`}>فاتح</button>
           <button onClick={() => onThemeChange('dark')} className={`py-2 rounded-lg text-sm transition-all ${theme === 'dark' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold' : ''}`}>داكن</button>
-          <button onClick={() => onThemeChange('system')} className={`py-2 rounded-lg text-sm transition-all ${theme === 'system' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold' : ''}`}>حسب النظام</button>
+          <button onClick={() => onThemeChange('system')} className={`py-2 rounded-lg text-sm transition-all ${theme === 'system' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold' : ''}`}>نظام</button>
         </div>
       </div>
       <div className="mb-6">
@@ -94,7 +96,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
         </div>
       </div>
       <div className="mb-6">
-        <h4 className="text-lg font-semibold text-[var(--text-secondary)] mb-3">✒️ الخطوط</h4>
+        <h4 className="text-lg font-semibold text-[var(--text-secondary)] mb-3">✒️ الخطوط والألوان</h4>
         <div className="mb-4">
             <label htmlFor="font-family-select" className="block text-[var(--text-secondary)] mb-2 text-sm">نوع الخط:</label>
             <select id="font-family-select" value={fontFamily} onChange={e => setFontFamily(e.target.value)} className="w-full p-2.5 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] text-base">
@@ -107,6 +109,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
             <label htmlFor="font-size-slider" className="block text-[var(--text-secondary)] mb-2 text-sm">{`حجم الخط: (${Math.round(fontScale * 100)}%)`}</label>
             <input id="font-size-slider" type='range' min='0.85' max='1.15' step='0.05' value={fontScale} onChange={e => setFontScale(parseFloat(e.target.value))} className='w-full h-2 bg-[var(--bg-inset)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-color)]' />
         </div>
+        
+        {/* Button Text Color Picker */}
         <div className="mt-4">
             <label htmlFor="button-text-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
                 <span>لون خط الأزرار:</span>
@@ -114,6 +118,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
             </label>
             <div className="relative">
                 <input id="button-text-color-picker" type="color" value={buttonTextColor || '#ffffff'} onChange={e => setButtonTextColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
+            </div>
+        </div>
+
+        {/* Border Color Picker */}
+        <div className="mt-4">
+            <label htmlFor="border-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
+                <span>لون الإطار (Border):</span>
+                <button onClick={() => setBorderColor && setBorderColor(null)} className={`text-xs text-[var(--accent-color)] hover:underline ${!borderColor ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!borderColor}>إعادة تعيين</button>
+            </label>
+            <div className="relative">
+                <input id="border-color-picker" type="color" value={borderColor || '#1A2B4D'} onChange={e => setBorderColor && setBorderColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
             </div>
         </div>
       </div>

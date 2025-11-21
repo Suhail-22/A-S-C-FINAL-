@@ -18,55 +18,95 @@
 
   <style>
     :root {
-      /* --- Restored Classic Design Strict Rules --- */
+      /* --- Light Theme (Default) --- */
+      --bg-primary-gradient: linear-gradient(180deg, #f0f4f8, #d9e2ec);
+      --bg-calculator: #ffffff;
       
-      /* 1. Background: Black/Dark Blue */
+      --button-radius: 12px; /* Softer roundness for light mode */
+      --button-number-bg: #f0f4f8;
+      --button-function-bg: #d9e2ec;
+      
+      --border-primary-default: #bcccdc;
+      --border-secondary-default: #d9e2ec;
+      
+      /* Dynamic Border Color with Fallback */
+      --border-primary: var(--border-color-custom, var(--border-primary-default));
+      --border-secondary: var(--border-color-custom, var(--border-secondary-default));
+
+      --button-border-color: var(--border-primary);
+      --button-number-shadow: 0 3px 0 var(--border-primary);
+      --button-number-active-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+      
+      --text-primary: #102a43;
+      --text-secondary: #627d98;
+      --button-function-text-color: #000000;
+      --button-text-color-custom: var(--text-primary);
+      --button-text-shadow: none;
+
+      --accent-equals-bg: #2196F3;
+      --accent-equals-text: #FFFFFF;
+      --accent-equals-shadow: 0 3px 0 #0d47a1;
+
+      --bg-display: #f8fafc;
+      --text-display: #102a43;
+      --display-text-shadow: none;
+
+      --bg-header: #ffffff;
+      --bg-panel: #ffffff;
+      
+      --accent-color: #2196F3;
+      --accent-color-contrast: #ffffff;
+
+      --bg-inset: rgba(0, 0, 0, 0.05);
+      --bg-inset-light: rgba(0, 0, 0, 0.02);
+      --calculator-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      
+      --font-scale: 1;
+    }
+    
+    /* --- Classic Dark/Gold Theme (The "Old Design") --- */
+    html.dark {
       --bg-primary-gradient: linear-gradient(180deg, #000000, #050A14); 
       --bg-calculator: #050A14; /* Very Dark Blue/Black */
       
-      /* 2. Buttons: Square Dark Blue */
-      --button-radius: 4px; /* Simple square edges */
+      --button-radius: 4px; /* Square buttons */
       --button-number-bg: #101B35; /* Dark Blue */
-      --button-function-bg: #1A2B4D; /* Slightly Lighter Blue for operators */
+      --button-function-bg: #1A2B4D; 
       
-      --button-border-color: #000000;
+      --border-primary-default: #1A2B4D;
+      --border-secondary-default: #101B35;
+      
+      /* Dynamic Border Color with Fallback */
+      --border-primary: var(--border-color-custom, var(--border-primary-default));
+      --border-secondary: var(--border-color-custom, var(--border-secondary-default));
+
+      --button-border-color: var(--border-primary);
       --button-number-shadow: 0 2px 0 #000000; 
       --button-number-active-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
       
-      /* 3. Text: Bright Yellow/Gold */
-      --text-primary: #FFD700; /* Pure Gold */
-      --text-secondary: #B0C4DE; /* Light Steel Blue */
+      --text-primary: #FFD700; /* Gold */
+      --text-secondary: #B0C4DE;
       --button-function-text-color: #FFD700;
       --button-text-color-custom: #FFD700;
       --button-text-shadow: none;
 
-      /* 4. Equals Button: Distinct Green */
       --accent-equals-bg: #00C853; /* Distinct Green */
       --accent-equals-text: #FFFFFF;
       --accent-equals-shadow: 0 2px 0 #006229;
-      --accent-equals-pulse-shadow: none;
 
-      /* 5. Display: Dark with White/Blueish text */
       --bg-display: #000000;
-      --text-display: #E0FFFF; /* Light Cyan/White */
+      --text-display: #E0FFFF;
       --display-text-shadow: none;
 
-      /* Panels & Components */
       --bg-header: #101B35;
       --bg-panel: #050A14;
-      --border-primary: #1A2B4D;
-      --border-secondary: #101B35;
       
-      /* Accents */
       --accent-color: #FFD700;
       --accent-color-contrast: #000000;
 
-      /* Misc */
       --bg-inset: rgba(0, 0, 0, 0.6);
       --bg-inset-light: rgba(255, 255, 255, 0.05);
       --calculator-shadow: none;
-      
-      --font-scale: 1;
     }
     
     html {
@@ -122,11 +162,10 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          // Using strict relative path with ./ to avoid origin confusion in some environments
           const registration = await navigator.serviceWorker.register('./service-worker.js');
           console.log('ServiceWorker registration successful with scope: ', registration.scope);
         } catch (err) {
-          console.log('ServiceWorker registration failed (likely due to preview environment restriction):', err);
+          console.log('ServiceWorker registration failed:', err);
         }
       });
     }

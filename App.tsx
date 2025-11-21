@@ -30,10 +30,11 @@ function App() {
   const [confirmation, setConfirmation] = useState<ConfirmationState>({ isOpen: false, onConfirm: () => {}, onCancel: () => {}, title: '', message: '' });
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  const [theme, setTheme] = useLocalStorage<string>('calcTheme_v3', 'system');
+  const [theme, setTheme] = useLocalStorage<string>('calcTheme_v3', 'dark'); // Default to 'dark' for classic feel
   const [fontFamily, setFontFamily] = useLocalStorage<string>('calcFontFamily_v2', 'Tajawal');
   const [fontScale, setFontScale] = useLocalStorage<number>('calcFontScale_v2', 1);
   const [buttonTextColor, setButtonTextColor] = useLocalStorage<string | null>('calcButtonTextColor_v1', null);
+  const [borderColor, setBorderColor] = useLocalStorage<string | null>('calcBorderColor_v1', null);
 
   const showNotification = useCallback((message: string) => {
     setNotification({ message, show: true });
@@ -83,18 +84,19 @@ function App() {
     const handleChange = () => {
         if (theme === 'system') {
             document.documentElement.classList.toggle('dark', mediaQuery.matches);
-            document.querySelector('meta[name="theme-color"]')?.setAttribute('content', mediaQuery.matches ? '#0a0e17' : '#FFFFFF');
+            document.querySelector('meta[name="theme-color"]')?.setAttribute('content', mediaQuery.matches ? '#050A14' : '#f0f4f8');
         }
     };
 
     if (theme === 'dark') {
         document.documentElement.classList.add('dark');
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0a0e17');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#050A14');
     } else if (theme === 'light') {
         document.documentElement.classList.remove('dark');
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#FFFFFF');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f0f4f8');
     } else {
         handleChange();
+        document.documentElement.classList.toggle('dark', mediaQuery.matches);
     }
 
     mediaQuery.addEventListener('change', handleChange);
@@ -113,6 +115,14 @@ function App() {
         document.documentElement.style.removeProperty('--button-text-color-custom');
     }
   }, [buttonTextColor]);
+
+  useEffect(() => {
+    if (borderColor) {
+        document.documentElement.style.setProperty('--border-color-custom', borderColor);
+    } else {
+        document.documentElement.style.removeProperty('--border-color-custom');
+    }
+  }, [borderColor]);
 
    useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -297,9 +307,6 @@ function App() {
       return calculator.history.filter(item => item.date === dateString).length;
   }, [calculator.history]);
 
-  // Orientation handling:
-  // If portrait setting is forced, constrain width.
-  // If auto, we allow full width on landscape (md screen and up)
   const orientationStyle = calculator.settings.orientation === 'portrait' 
     ? 'max-w-[460px] mx-auto border-x border-[var(--border-secondary)] shadow-2xl' 
     : 'w-full landscape:max-w-none portrait:max-w-[460px] portrait:mx-auto';
@@ -311,68 +318,70 @@ function App() {
            <div className="absolute top-4 z-20 w-[calc(100%-2rem)] max-w-[420px] bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between animate-fade-in-down">
              <div>
                <h4 className="font-bold">✨ تحديث جديد جاهز!</h4>
-               <p className="text-sm opacity-90">اضغط للتثبيت وإعادة تشغيل الآلة الحاسبة.</p>
+               <p className="text-xs opacity-90 mt-1">نسخة أحدث وأسرع متاحة الآن.</p>
              </div>
-             <button onClick={onUpdateAccepted} className="bg-white text-blue-600 font-bold py-1.5 px-3 rounded-lg text-sm hover:bg-gray-200 transition-colors">تثبيت</button>
+             <button onClick={onUpdateAccepted} className="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-100 transition-colors">تحديث</button>
            </div>
         )}
-        {/* Calculator Wrapper: in landscape mode (on larger screens or rotated phones), let it fill width */}
-        <div className={`transition-all duration-300 ${calculator.settings.orientation === 'portrait' ? 'w-full px-4' : 'w-full h-full px-4 landscape:px-8'}`}>
-             <Calculator
-              calculator={calculator}
-              onToggleSettings={() => setIsSettingsOpen(v => !v)}
-              onToggleHistory={() => setIsHistoryOpen(v => !v)}
-              onShare={showNotification}
-              entryCount={calculator.entryCount}
-              todayCount={todayCount} 
-            />
-        </div>
-       
+
+        <Calculator 
+          calculator={calculator}
+          onToggleSettings={() => setIsSettingsOpen(true)}
+          onToggleHistory={() => setIsHistoryOpen(true)}
+          onShare={showNotification}
+          entryCount={calculator.entryCount}
+          todayCount={todayCount}
+        />
+
+        <Overlay show={anyPanelOpen} onClick={closeAllPanels} />
+
+        <SettingsPanel 
+          isOpen={isSettingsOpen} 
+          onClose={() => setIsSettingsOpen(false)} 
+          settings={calculator.settings}
+          theme={theme}
+          onThemeChange={setTheme}
+          fontFamily={fontFamily}
+          setFontFamily={setFontFamily}
+          fontScale={fontScale}
+          setFontScale={setFontScale}
+          buttonTextColor={buttonTextColor}
+          setButtonTextColor={setButtonTextColor}
+          borderColor={borderColor}
+          setBorderColor={setBorderColor}
+          onOpenSupport={() => { setIsSettingsOpen(false); setIsSupportOpen(true); }}
+          onShowAbout={() => { setIsSettingsOpen(false); setIsAboutOpen(true); }}
+          onCheckForUpdates={onCheckForUpdates}
+          deferredPrompt={deferredPrompt}
+          onInstallApp={handleInstallClick}
+        />
+
+        <HistoryPanel 
+          isOpen={isHistoryOpen} 
+          onClose={() => setIsHistoryOpen(false)} 
+          history={calculator.history}
+          onClearHistory={handleClearHistory}
+          onHistoryItemClick={calculator.actions.loadFromHistory}
+          onExportHistory={handleExport}
+          onExportCsvHistory={handleExport}
+          onShareHistory={handleShareHistoryText}
+          onUpdateHistoryItemNote={calculator.actions.updateHistoryItemNote}
+          onDeleteItem={handleDeleteHistoryItem}
+        />
+        
+        <SupportPanel isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
+        <AboutPanel isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+        
+        <Notification message={notification.message} show={notification.show} />
+        
+        <ConfirmationDialog 
+            isOpen={confirmation.isOpen} 
+            onConfirm={confirmation.onConfirm} 
+            onCancel={confirmation.onCancel} 
+            title={confirmation.title} 
+            message={confirmation.message} 
+        />
       </div>
-      <Overlay show={anyPanelOpen} onClick={closeAllPanels} />
-      <SettingsPanel
-        isOpen={isSettingsOpen}
-        onClose={closeAllPanels}
-        settings={calculator.settings}
-        theme={theme}
-        onThemeChange={setTheme}
-        fontFamily={fontFamily} 
-        setFontFamily={setFontFamily}
-        fontScale={fontScale}
-        setFontScale={setFontScale}
-        buttonTextColor={buttonTextColor}
-        setButtonTextColor={setButtonTextColor}
-        onOpenSupport={() => { closeAllPanels(); setIsSupportOpen(true); }}
-        onShowAbout={() => { closeAllPanels(); setIsAboutOpen(true); }}
-        onCheckForUpdates={onCheckForUpdates}
-        deferredPrompt={deferredPrompt}
-        onInstallApp={handleInstallClick}
-      />
-      <HistoryPanel
-        isOpen={isHistoryOpen}
-        onClose={closeAllPanels}
-        history={calculator.history}
-        onClearHistory={handleClearHistory}
-        onHistoryItemClick={(item) => {
-          calculator.actions.loadFromHistory(item.expression);
-          closeAllPanels();
-        }}
-        onExportHistory={(start, end) => handleExport('txt', start, end)}
-        onExportCsvHistory={(start, end) => handleExport('csv', start, end)}
-        onShareHistory={handleShareHistoryText}
-        onUpdateHistoryItemNote={calculator.actions.updateHistoryItemNote}
-        onDeleteItem={handleDeleteHistoryItem}
-      />
-      <SupportPanel isOpen={isSupportOpen} onClose={closeAllPanels} />
-      <AboutPanel isOpen={isAboutOpen} onClose={closeAllPanels} />
-      <ConfirmationDialog
-        isOpen={confirmation.isOpen}
-        title={confirmation.title}
-        message={confirmation.message}
-        onConfirm={() => confirmation.onConfirm()}
-        onCancel={() => confirmation.onCancel()}
-      />
-      <Notification message={notification.message} show={notification.show} />
     </div>
   );
 }

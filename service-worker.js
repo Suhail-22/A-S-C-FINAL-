@@ -1,9 +1,9 @@
 
-const CACHE_NAME = 'abo-suhail-calc-v52-offline-pro';
+const CACHE_NAME = 'abo-suhail-calc-v53-offline-fixed';
 
 // List of ALL files to pre-cache.
 // This ensures that when the app loads, it downloads the entire source code
-// so it can run locally without hitting the server.
+// AND the external libraries so it can run locally without hitting the server.
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -39,19 +39,33 @@ const PRECACHE_URLS = [
   // Services
   './services/calculationEngine.ts',
   './services/geminiService.ts',
-  './services/localErrorFixer.ts'
+  './services/localErrorFixer.ts',
+
+  // External Resources (CRITICAL for offline)
+  'https://cdn.tailwindcss.com',
+  'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
+  'https://esm.sh/react@18.3.1',
+  'https://esm.sh/react-dom@18.3.1/client',
+  'https://esm.sh/react@18.3.1/',
+  'https://esm.sh/react-dom@18.3.1/'
 ];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting(); // Activate immediately upon installation
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Installing & Pre-caching all app source files...');
-      // We use { cache: 'reload' } to ensure we get fresh files from the server during install
-      const urlsToCache = PRECACHE_URLS.map(url => new Request(url, { cache: 'reload' }));
+      console.log('Installing & Pre-caching all app source files + CDN libs...');
+      // We map requests to cache them. 
+      // For external URLs (CDN), mode 'cors' or 'no-cors' might depend on the server, 
+      // but simple fetch usually works for caching opaque responses.
+      const urlsToCache = PRECACHE_URLS.map(url => {
+         return new Request(url, { mode: url.startsWith('http') ? 'cors' : 'same-origin' });
+      });
+      
       return cache.addAll(urlsToCache).catch(err => {
           console.error('Precache failed for some files:', err);
-          // Continue even if some fail, but log it.
+          // We don't throw here to allow partial installation, 
+          // but for a robust offline app, all need to pass.
       });
     })
   );
@@ -82,36 +96,27 @@ self.addEventListener('fetch', (event) => {
     caches.open(CACHE_NAME).then(async (cache) => {
       const cachedResponse = await cache.match(request);
       
-      // Strategy: Stale-While-Revalidate for non-critical assets, Cache-First for immutable assets
-      
       if (cachedResponse) {
-        // If online, try to update the cache in the background for next time
-        // This ensures the user always has the latest version eventually
+        // If online, update cache in background (stale-while-revalidate)
         if (navigator.onLine) {
              fetch(request).then(networkResponse => {
-                 // Check if valid response before updating cache
                  if(networkResponse && networkResponse.status === 200) {
                      cache.put(request, networkResponse.clone());
                  }
-             }).catch(() => { /* ignore background fetch errors */ }); 
+             }).catch(() => { /* ignore */ }); 
         }
         return cachedResponse;
       }
 
       // If not in cache, fetch from network
       return fetch(request).then((networkResponse) => {
-        // Ensure we got a valid response
-        // We allow type 'cors' to cache external scripts like React (esm.sh) and Tailwind
-        if (!networkResponse || networkResponse.status !== 200 || (networkResponse.type !== 'basic' && networkResponse.type !== 'cors')) {
-          return networkResponse;
+        // Cache successful GET requests
+        if (networkResponse && networkResponse.status === 200) {
+             cache.put(request, networkResponse.clone());
         }
-
-        // IMPORTANT: Cache the new file (fonts, cdn scripts, etc.)
-        cache.put(request, networkResponse.clone());
         return networkResponse;
       }).catch(() => {
          // Network failed & No Cache -> Show Offline Page
-         // Only for navigation requests (main page load)
          if (request.mode === 'navigate') {
              return cache.match('./offline.html');
          }

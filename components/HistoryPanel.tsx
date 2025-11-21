@@ -113,20 +113,21 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
         ) : (
           groupedAndFilteredHistory.map(({ date, items, total }, groupIndex) => (
             <div key={date} className="mb-2">
-              <div className={`flex justify-between items-center py-3 px-1 ${groupIndex > 0 ? 'border-t-2 border-[var(--border-secondary)]' : ''}`}>
-                <h4 className="text-sm font-bold text-[var(--text-secondary)]">{date}</h4>
+              {/* Revised Header Layout: Date | Total (Big) | Count | Share */}
+              <div className={`flex items-center justify-between py-3 px-1 ${groupIndex > 0 ? 'border-t-2 border-[var(--border-secondary)]' : ''}`}>
                 <div className="flex items-center gap-3">
+                   <h4 className="text-sm font-bold text-[var(--text-secondary)]">{date}</h4>
+                   <span className="text-lg font-extrabold text-green-500">
+                      {total.toLocaleString('en-US', { maximumFractionDigits: 2, useGrouping: false })}
+                   </span>
+                </div>
+                <div className="flex items-center gap-2">
+                     <div className="px-2 py-0.5 rounded-md bg-[var(--bg-inset)] text-[var(--text-secondary)] text-xs font-bold">
+                       {items.length}
+                     </div>
                      <button onClick={() => onShareHistory(items)} className="text-[var(--text-secondary)] hover:text-[var(--accent-color)] transition-colors" aria-label={`مشاركة عمليات يوم ${date}`}>
                         <Icon name="share_small" className="w-4 h-4" />
                     </button>
-                    <div className="flex flex-col items-end leading-none">
-                        <span className="text-[10px] text-[var(--text-secondary)] mb-0.5">
-                             ({items.length} عمليات)
-                        </span>
-                        <span className="text-xs font-bold text-green-400">
-                            {total.toLocaleString('en-US', { maximumFractionDigits: 2, useGrouping: false })}
-                        </span>
-                    </div>
                 </div>
               </div>
               <div className="flex flex-col gap-2 pl-2 border-l-2 border-[var(--border-secondary)] border-opacity-30">
