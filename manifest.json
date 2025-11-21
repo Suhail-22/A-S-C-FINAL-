@@ -2,9 +2,9 @@
 {
   "short_name": "Abo Suhail Calc",
   "name": "Abo Suhail Calculator",
-  "description": "آلة حاسبة متقدمة وذكية لنظام أندرويد و ويندوز و ايفون، مع سجل عمليات، حسابات ضريبية، وتخصيص كامل.",
+  "description": "آلة حاسبة متقدمة وذكية",
   "id": "abosuhail-calculator",
-  "scope": "./",
+  "scope": "/",
   "start_url": "./index.html",
   "icons": [
     {
@@ -26,15 +26,10 @@
     }
   ],
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "portrait",
   "dir": "rtl",
-  "theme_color": "#0F172A",
-  "background_color": "#0F172A",
+  "theme_color": "#050A14",
+  "background_color": "#050A14",
   "lang": "ar",
-  "categories": [
-    "utilities",
-    "productivity",
-    "education"
-  ],
   "prefer_related_applications": false
 }

@@ -1,91 +1,101 @@
 
-const CACHE_NAME = 'abo-suhail-v400-final';
+const CACHE_NAME = 'abo-suhail-pro-offline-v7';
 
-// Files that MUST be cached immediately for the app shell to work
-const PRECACHE_ASSETS = [
+// Critical external resources that must be cached for offline usage
+const EXTERNAL_RESOURCES = [
+  'https://cdn.tailwindcss.com',
+  'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
+  'https://esm.sh/react@18.3.1',
+  'https://esm.sh/react-dom@18.3.1/client',
+  'https://esm.sh/react@18.3.1/',
+  'https://esm.sh/react-dom@18.3.1/'
+];
+
+const LOCAL_RESOURCES = [
   './',
   './index.html',
   './manifest.json',
-  './assets/icon.svg',
-  './offline.html'
+  './assets/icon.svg'
 ];
 
-// Install Event: Cache the core shell
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // Force activation immediately
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // 1. Cache Local Resources
+      await cache.addAll(LOCAL_RESOURCES);
+
+      // 2. Cache External Resources (with fallback for opaque responses)
+      const externalPromises = EXTERNAL_RESOURCES.map(async (url) => {
+        try {
+          // Try fetching with CORS first to get a 'clean' response
+          const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+          if (!response.ok) throw new Error('Network response was not ok');
+          return cache.put(url, response);
+        } catch (e) {
+          // Fallback to no-cors (opaque) for CDNs that might not send headers
+          // This is crucial for Tailwind CDN sometimes
+          const opaqueResponse = await fetch(url, { mode: 'no-cors' });
+          return cache.put(url, opaqueResponse);
+        }
+      });
+      await Promise.all(externalPromises);
     })
   );
 });
 
-// Activate Event: Clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    self.clients.claim().then(() => {
-       return caches.keys().then(keys => Promise.all(
-         keys.map(key => {
-           if (key !== CACHE_NAME) {
-             return caches.delete(key);
-           }
-         })
-       ));
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
     })
   );
+  self.clients.claim();
 });
 
-// Fetch Event: The Core Logic for Offline Support
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  // Strategy: Network First for HTML (Navigation), falling back to cached index.html
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => {
+          // If offline, return the cached index.html
+          return caches.match('./index.html').then(res => res || caches.match('/'));
+        })
+    );
+    return;
+  }
 
-  // Ignore non-http requests (like extensions)
-  if (!url.protocol.startsWith('http')) return;
-
-  // Strategy: Stale-While-Revalidate
-  // 1. Return cached version immediately (Fastest).
-  // 2. Fetch from network in background to update cache (Freshness).
-  // 3. If no cache, wait for network.
-  // 4. If network fails (Offline) & no cache, show Offline page.
-
+  // Strategy: Stale-While-Revalidate for everything else (Scripts, Styles, Images)
+  // Returns cached version immediately, then updates cache in background
   event.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      // 1. Try to get from cache first
-      const cachedResponse = await cache.match(event.request);
-
-      // 2. Create a network fetch promise to update the cache
+    caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request)
         .then((networkResponse) => {
-          // Only cache valid responses
-          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
-            cache.put(event.request, networkResponse.clone());
+          // Update cache with new version if valid
+          if (networkResponse && (networkResponse.ok || networkResponse.type === 'opaque')) {
+             const clone = networkResponse.clone();
+             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
           return networkResponse;
         })
         .catch(() => {
-          // Network failed - do nothing here, handled below
-          return null;
+            // Network failed, stick with cache
         });
 
-      // 3. Return cached response if we have it (and update in background)
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      // 4. If not in cache, we MUST wait for network
-      const networkResponse = await fetchPromise;
-
-      if (networkResponse) {
-        return networkResponse;
-      }
-
-      // 5. Fallback for Offline (Network failed & Not in cache)
-      // If it's a navigation request (HTML page), show offline.html or index.html
-      if (event.request.mode === 'navigate') {
-        return cache.match('./index.html').then(r => r || cache.match('./offline.html'));
-      }
-
-      return new Response('Offline', { status: 503, statusText: 'Offline' });
+      // Return cached response immediately if available, otherwise wait for network
+      return cachedResponse || fetchPromise;
     })
   );
 });
