@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'abo-suhail-calc-v58-offline-final';
+const CACHE_NAME = 'abo-suhail-calc-v62-offline-fixed';
 
 // List of ALL files to pre-cache.
 const PRECACHE_URLS = [
@@ -39,7 +39,8 @@ const PRECACHE_URLS = [
   './services/geminiService.ts',
   './services/localErrorFixer.ts',
 
-  // External Resources (These will be fetched with no-cors)
+  // External Resources 
+  // IMPORTANT: These must be fetched with CORS enabled to work as Modules/Scripts
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
   'https://esm.sh/react@18.3.1',
@@ -54,18 +55,22 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then(async (cache) => {
       console.log('Installing & Pre-caching files...');
       
-      // We must handle requests differently based on origin
       const cachePromises = PRECACHE_URLS.map(async (url) => {
         try {
-          // For external URLs (http/https), use no-cors to allow opaque responses
-          // For local files, use default (cors/same-origin)
+          // CRITICAL FIX: Use 'cors' mode. 
+          // 'no-cors' creates opaque responses which fail for ES Modules (react/react-dom).
           const request = new Request(url, { 
-             mode: url.startsWith('http') ? 'no-cors' : 'same-origin',
-             cache: 'reload'
+             mode: 'cors', 
+             credentials: 'omit',
+             cache: 'reload' // Force network fetch to ensure fresh cache
           });
           
           const response = await fetch(request);
-          // Store in cache even if opaque (status 0)
+          
+          if (!response.ok) {
+            throw new Error(`Network response was not ok for ${url}`);
+          }
+          
           return cache.put(request, response);
         } catch (err) {
           console.error('Failed to cache:', url, err);
@@ -83,6 +88,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -104,19 +110,20 @@ self.addEventListener('fetch', (event) => {
       }
 
       try {
-        // Network fallback with aggressive caching for offline support later
-        const networkResponse = await fetch(request, { 
-            mode: request.url.startsWith('http') ? 'no-cors' : 'cors' 
-        });
+        const networkResponse = await fetch(request);
         
-        if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+        // Cache valid responses for future offline use
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
              cache.put(request, networkResponse.clone());
         }
         return networkResponse;
       } catch (e) {
+         // If offline and resource not found
+         console.log('Offline fetch failed:', request.url);
          if (request.mode === 'navigate') {
              return cache.match('./offline.html');
          }
+         // Fallback for images/fonts could be added here
          throw e;
       }
     })
