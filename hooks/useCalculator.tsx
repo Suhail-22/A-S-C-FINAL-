@@ -110,6 +110,7 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
   }, [vibrationEnabled, playSound]);
 
   const append = useCallback((value: string) => {
+    // Feedback
     if (['+', '-', '×', '÷'].includes(value)) {
         playSound('operator');
     } else {
@@ -117,6 +118,7 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     }
     vibrate(20);
 
+    // Reset states
     if (error) {
         setError(null);
         setAiSuggestion(null);
@@ -139,41 +141,63 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     }
 
     setInput(prev => {
-      // 1. Handling start of input
+      // --- Logic for Start of Input ---
       if (prev === '0') {
-        const forbiddenStarters = ['+', '-', '×', '÷', '%', ')'];
-        if (forbiddenStarters.includes(value)) {
-            return prev;
-        }
+        if (['0', '00', '000'].includes(value)) return '0'; // Ignore multiple zeros at start
         if (value === '.') return '0.';
-        // Strict check: do not allow 0, 00, 000 if value is already 0
-        if (value === '00' || value === '000' || value === '0') return '0'; 
-        if (value === '(') return '(';
-        return value;
+        if (['+', '-', '×', '÷'].includes(value)) return '0' + value; // Allow 0+
+        if (['%', ')'].includes(value)) return '0'; // Ignore invalid starters
+        return value; // Replace 0 with the new number/paren
       }
-      
+
       const lastChar = prev.slice(-1);
       const operators = ['+', '-', '×', '÷'];
+      const isLastOperator = operators.includes(lastChar);
+      const isInputOperator = operators.includes(value);
 
-      // 2. Operator Replacement Logic
-      // If the last character is an operator and the new input is also an operator,
-      // replace the old operator with the new one.
-      if (operators.includes(lastChar) && operators.includes(value)) {
+      // --- Logic 1: Operator Replacement ---
+      // If last was operator and new is operator, replace it.
+      if (isLastOperator && isInputOperator) {
           return prev.slice(0, -1) + value;
       }
 
-      // 3. Prevent operators immediately after open parenthesis
-      if (lastChar === '(' && ['+', '×', '÷', '%', ')'].includes(value)) {
+      // --- Logic 2: Prevent Invalid Sequences ---
+      // Prevent % right after an operator (e.g., +%)
+      if (isLastOperator && value === '%') {
           return prev;
       }
 
-      // 4. Prevent double percent
-      if (value === '%' && lastChar === '%') {
-        return prev;
+      // Prevent double %
+      if (lastChar === '%' && value === '%') {
+          return prev;
       }
-      
-      // 5. Auto-insert multiplication (implicit multiplication)
-      if (lastChar === ')' && !operators.concat(['%', ')', '.']).includes(value)) {
+
+      // Prevent operators right after open parenthesis
+      if (lastChar === '(' && (isInputOperator || value === '%' || value === ')')) {
+          return prev;
+      }
+
+      // --- Logic 3: Handle "Zero Segments" (e.g. 5+0 -> 5+00) ---
+      // Split by operators or parens to get the current number segment being typed
+      const parts = prev.split(/([+\-×÷()])/);
+      const currentSegment = parts[parts.length - 1];
+
+      // If the current segment is exactly "0"
+      if (currentSegment === '0') {
+          // If user types 0, 00, 000 -> Ignore
+          if (['0', '00', '000'].includes(value)) {
+              return prev;
+          }
+          // If user types a digit (1-9) or open paren -> Replace the 0
+          // e.g., 5+0 + 5 -> 5+5
+          if (!isInputOperator && value !== '.' && value !== '%' && value !== ')') {
+              return prev.slice(0, -1) + value;
+          }
+      }
+
+      // --- Logic 4: Implicit Multiplication ---
+      // Auto-insert × if typing number/paren after closing paren: )5 -> )×5
+      if (lastChar === ')' && !isInputOperator && value !== ')' && value !== '%' && value !== '.') {
           return prev + '×' + value;
       }
       

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'abo-suhail-offline-v5.0.0';
+const CACHE_NAME = 'abo-suhail-offline-v5.0.1';
 
 const URLS_TO_CACHE = [
   './',
