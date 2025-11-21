@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'abo-suhail-pro-offline-v7';
+const CACHE_NAME = 'abo-suhail-pro-offline-v8';
 
 // Critical external resources that must be cached for offline usage
 const EXTERNAL_RESOURCES = [
@@ -34,7 +34,6 @@ self.addEventListener('install', (event) => {
           return cache.put(url, response);
         } catch (e) {
           // Fallback to no-cors (opaque) for CDNs that might not send headers
-          // This is crucial for Tailwind CDN sometimes
           const opaqueResponse = await fetch(url, { mode: 'no-cors' });
           return cache.put(url, opaqueResponse);
         }
@@ -60,25 +59,28 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Strategy: Network First for HTML (Navigation), falling back to cached index.html
+  // Strategy: Cache First for HTML (Navigation)
+  // This forces the browser to load the app from cache IMMEDIATELY, ensuring offline works.
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(() => {
-          // If offline, return the cached index.html
-          return caches.match('./index.html').then(res => res || caches.match('/'));
-        })
+      caches.match('./index.html').then((cachedResponse) => {
+        // 1. Return cached index.html immediately if found
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+        // 2. Fallback: Try to match the request specifically (for root /)
+        return caches.match(event.request).then(response => {
+            return response || fetch(event.request).catch(() => {
+                 // 3. Absolute fallback if network fails and not in cache (shouldn't happen if installed)
+                 return caches.match('./index.html');
+            });
+        });
+      })
     );
     return;
   }
 
   // Strategy: Stale-While-Revalidate for everything else (Scripts, Styles, Images)
-  // Returns cached version immediately, then updates cache in background
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request)
@@ -91,7 +93,7 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => {
-            // Network failed, stick with cache
+            // Network failed, do nothing, rely on cache
         });
 
       // Return cached response immediately if available, otherwise wait for network
