@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { TaxSettings } from '../types';
 import Icon from './Icon';
@@ -277,7 +278,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
       </SettingsSection>
 
       <div className="mt-6 flex flex-col gap-3">
-        <button onClick={onCheckForUpdates} className="w-full py-3 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] font-bold text-base hover:brightness-95 transition-colors">✨ التحقق من التحديثات</button>
         <button onClick={onShowAbout} className="w-full py-3 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] font-bold text-base hover:brightness-95 transition-colors">ℹ️ حول الآلة الحاسبة</button>
         <button onClick={onOpenSupport} className="w-full bg-gradient-to-br from-green-600/50 to-green-700/60 text-white border border-green-400/80 rounded-xl py-3 font-bold text-lg shadow-[0_5px_12px_rgba(0,0,0,0.35),0_0_18px_rgba(100,220,100,0.35)] mt-3 hover:from-green-600/60 transition-colors">💬 تواصل مع الدعم</button>
       </div>
