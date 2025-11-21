@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'abo-suhail-pro-offline-v8';
+const CACHE_NAME = 'abo-suhail-pro-offline-v2.0.0';
 
 // Critical external resources that must be cached for offline usage
 const EXTERNAL_RESOURCES = [
@@ -22,22 +22,32 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // 1. Cache Local Resources
+      // 1. Cache Local Resources (Critical)
       await cache.addAll(LOCAL_RESOURCES);
 
-      // 2. Cache External Resources (with fallback for opaque responses)
+      // 2. Cache External Resources (Best Effort Strategy)
+      // We map over requests and catch individual errors so one failure doesn't stop the whole install.
       const externalPromises = EXTERNAL_RESOURCES.map(async (url) => {
         try {
           // Try fetching with CORS first to get a 'clean' response
           const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
-          if (!response.ok) throw new Error('Network response was not ok');
-          return cache.put(url, response);
+          if (response.ok) {
+             return cache.put(url, response);
+          }
+          throw new Error('Network response was not ok');
         } catch (e) {
           // Fallback to no-cors (opaque) for CDNs that might not send headers
-          const opaqueResponse = await fetch(url, { mode: 'no-cors' });
-          return cache.put(url, opaqueResponse);
+          // This is "Best Effort" - if it fails here, we just log it and continue.
+          try {
+             const opaqueResponse = await fetch(url, { mode: 'no-cors' });
+             return cache.put(url, opaqueResponse);
+          } catch (err) {
+             console.warn(`[SW] Failed to cache external resource: ${url}`);
+          }
         }
       });
+      
+      // Wait for all attempts to finish (success or fail)
       await Promise.all(externalPromises);
     })
   );
@@ -59,9 +69,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const request = event.request;
+
   // Strategy: Cache First for HTML (Navigation)
-  // This forces the browser to load the app from cache IMMEDIATELY, ensuring offline works.
-  if (event.request.mode === 'navigate') {
+  // This is critical for PWA start_url to work offline.
+  if (request.mode === 'navigate') {
     event.respondWith(
       caches.match('./index.html').then((cachedResponse) => {
         // 1. Return cached index.html immediately if found
@@ -69,9 +81,14 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
         }
         // 2. Fallback: Try to match the request specifically (for root /)
-        return caches.match(event.request).then(response => {
-            return response || fetch(event.request).catch(() => {
-                 // 3. Absolute fallback if network fails and not in cache (shouldn't happen if installed)
+        return caches.match(request).then(response => {
+            return response || fetch(request).then(netRes => {
+                 // Update cache if network succeeds
+                 const clone = netRes.clone();
+                 caches.open(CACHE_NAME).then(cache => cache.put('./index.html', clone));
+                 return netRes;
+            }).catch(() => {
+                 // 3. Absolute fallback if network fails and not in cache
                  return caches.match('./index.html');
             });
         });
@@ -82,13 +99,13 @@ self.addEventListener('fetch', (event) => {
 
   // Strategy: Stale-While-Revalidate for everything else (Scripts, Styles, Images)
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request)
+    caches.match(request).then((cachedResponse) => {
+      const fetchPromise = fetch(request)
         .then((networkResponse) => {
           // Update cache with new version if valid
           if (networkResponse && (networkResponse.ok || networkResponse.type === 'opaque')) {
              const clone = networkResponse.clone();
-             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return networkResponse;
         })

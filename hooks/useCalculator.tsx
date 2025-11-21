@@ -352,9 +352,10 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     setHistory(prevHistory => prevHistory.filter(item => item.id !== id));
   }, [setHistory]);
 
-  // Updated: Accepts 'HistoryItem | string' to prevent crashes
+  // Updated: Accepts 'HistoryItem | string' to prevent crashes, with extra safety checks
   const loadFromHistory = useCallback((item: HistoryItem | string) => {
-    const expression = typeof item === 'string' ? item : item.expression;
+    if (!item) return;
+    const expression = typeof item === 'string' ? item : (item.expression || '0');
     setInput(expression);
     setCalculationExecuted(false);
     setError(null);
