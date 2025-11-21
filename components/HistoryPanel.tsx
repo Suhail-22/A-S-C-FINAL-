@@ -113,23 +113,33 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
         ) : (
           groupedAndFilteredHistory.map(({ date, items, total }, groupIndex) => (
             <div key={date} className="mb-2">
-              {/* Revised Header Layout: Date | Total (Big) | Count | Share */}
+              
+              {/* Daily Header Re-design */}
               <div className={`flex items-center justify-between py-3 px-1 ${groupIndex > 0 ? 'border-t-2 border-[var(--border-secondary)]' : ''}`}>
-                <div className="flex items-center gap-3">
+                
+                {/* Date (Right) */}
+                <div className="flex-1 text-right">
                    <h4 className="text-sm font-bold text-[var(--text-secondary)]">{date}</h4>
-                   <span className="text-lg font-extrabold text-green-500">
+                </div>
+
+                {/* Total (Center) */}
+                <div className="flex-0 px-2 flex flex-col items-center justify-center">
+                   <span className="text-lg font-extrabold text-green-500 whitespace-nowrap" dir="ltr">
                       {total.toLocaleString('en-US', { maximumFractionDigits: 2, useGrouping: false })}
                    </span>
                 </div>
-                <div className="flex items-center gap-2">
-                     <div className="px-2 py-0.5 rounded-md bg-[var(--bg-inset)] text-[var(--text-secondary)] text-xs font-bold">
-                       {items.length}
+
+                {/* Count + Share (Left) */}
+                <div className="flex-1 flex justify-end items-center gap-2">
+                     <div className="text-[10px] text-[var(--text-secondary)] whitespace-nowrap">
+                       {items.length} عمليات
                      </div>
-                     <button onClick={() => onShareHistory(items)} className="text-[var(--text-secondary)] hover:text-[var(--accent-color)] transition-colors" aria-label={`مشاركة عمليات يوم ${date}`}>
+                     <button onClick={() => onShareHistory(items)} className="p-1 rounded bg-[var(--bg-inset)] text-[var(--text-secondary)] hover:text-[var(--accent-color)] transition-colors" aria-label={`مشاركة عمليات يوم ${date}`}>
                         <Icon name="share_small" className="w-4 h-4" />
                     </button>
                 </div>
               </div>
+
               <div className="flex flex-col gap-2 pl-2 border-l-2 border-[var(--border-secondary)] border-opacity-30">
                 {items.map((item) => {
                   const isEditing = editingItem && editingItem.id === item.id;

@@ -1,9 +1,7 @@
 
-const CACHE_NAME = 'abo-suhail-calc-v53-offline-fixed';
+const CACHE_NAME = 'abo-suhail-calc-v55-offline-final';
 
 // List of ALL files to pre-cache.
-// This ensures that when the app loads, it downloads the entire source code
-// AND the external libraries so it can run locally without hitting the server.
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -41,7 +39,7 @@ const PRECACHE_URLS = [
   './services/geminiService.ts',
   './services/localErrorFixer.ts',
 
-  // External Resources (CRITICAL for offline)
+  // External Resources
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
   'https://esm.sh/react@18.3.1',
@@ -51,21 +49,19 @@ const PRECACHE_URLS = [
 ];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // Activate immediately upon installation
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Installing & Pre-caching all app source files + CDN libs...');
-      // We map requests to cache them. 
-      // For external URLs (CDN), mode 'cors' or 'no-cors' might depend on the server, 
-      // but simple fetch usually works for caching opaque responses.
+      console.log('Installing & Pre-caching files...');
       const urlsToCache = PRECACHE_URLS.map(url => {
-         return new Request(url, { mode: url.startsWith('http') ? 'cors' : 'same-origin' });
+         // Using no-cors for external resources allows caching opaque responses
+         // This is critical for CDNs that might not send CORS headers for all requests
+         const mode = url.startsWith('http') ? 'no-cors' : 'same-origin';
+         return new Request(url, { mode: mode });
       });
       
       return cache.addAll(urlsToCache).catch(err => {
           console.error('Precache failed for some files:', err);
-          // We don't throw here to allow partial installation, 
-          // but for a robust offline app, all need to pass.
       });
     })
   );
@@ -77,7 +73,6 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -88,8 +83,6 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  
-  // Ignore non-GET requests (like POST/PUT)
   if (request.method !== 'GET') return;
 
   event.respondWith(
@@ -97,10 +90,12 @@ self.addEventListener('fetch', (event) => {
       const cachedResponse = await cache.match(request);
       
       if (cachedResponse) {
-        // If online, update cache in background (stale-while-revalidate)
         if (navigator.onLine) {
-             fetch(request).then(networkResponse => {
-                 if(networkResponse && networkResponse.status === 200) {
+             // Revalidate in background
+             fetch(request, { mode: request.url.startsWith('http') ? 'no-cors' : 'same-origin' })
+             .then(networkResponse => {
+                 // Check if valid response (type opaque is ok for no-cors)
+                 if(networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
                      cache.put(request, networkResponse.clone());
                  }
              }).catch(() => { /* ignore */ }); 
@@ -108,19 +103,18 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
 
-      // If not in cache, fetch from network
-      return fetch(request).then((networkResponse) => {
-        // Cache successful GET requests
-        if (networkResponse && networkResponse.status === 200) {
+      try {
+        const networkResponse = await fetch(request, { mode: request.url.startsWith('http') ? 'no-cors' : 'cors' });
+        if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
              cache.put(request, networkResponse.clone());
         }
         return networkResponse;
-      }).catch(() => {
-         // Network failed & No Cache -> Show Offline Page
+      } catch (e) {
          if (request.mode === 'navigate') {
              return cache.match('./offline.html');
          }
-      });
+         throw e;
+      }
     })
   );
 });

@@ -30,11 +30,15 @@ function App() {
   const [confirmation, setConfirmation] = useState<ConfirmationState>({ isOpen: false, onConfirm: () => {}, onCancel: () => {}, title: '', message: '' });
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  const [theme, setTheme] = useLocalStorage<string>('calcTheme_v3', 'dark'); // Default to 'dark' for classic feel
+  const [theme, setTheme] = useLocalStorage<string>('calcTheme_v3', 'dark');
   const [fontFamily, setFontFamily] = useLocalStorage<string>('calcFontFamily_v2', 'Tajawal');
   const [fontScale, setFontScale] = useLocalStorage<number>('calcFontScale_v2', 1);
+  
+  // Custom Color States
   const [buttonTextColor, setButtonTextColor] = useLocalStorage<string | null>('calcButtonTextColor_v1', null);
   const [borderColor, setBorderColor] = useLocalStorage<string | null>('calcBorderColor_v1', null);
+  const [numberBtnColor, setNumberBtnColor] = useLocalStorage<string | null>('calcNumberBtnColor_v1', null);
+  const [funcBtnColor, setFuncBtnColor] = useLocalStorage<string | null>('calcFuncBtnColor_v1', null);
 
   const showNotification = useCallback((message: string) => {
     setNotification({ message, show: true });
@@ -108,21 +112,27 @@ function App() {
       document.documentElement.style.setProperty('--font-scale', String(fontScale));
   }, [fontFamily, fontScale]);
 
+  // Inject Custom Colors
   useEffect(() => {
-    if (buttonTextColor) {
-        document.documentElement.style.setProperty('--button-text-color-custom', buttonTextColor);
-    } else {
-        document.documentElement.style.removeProperty('--button-text-color-custom');
-    }
+    if (buttonTextColor) document.documentElement.style.setProperty('--button-text-color-custom', buttonTextColor);
+    else document.documentElement.style.removeProperty('--button-text-color-custom');
   }, [buttonTextColor]);
 
   useEffect(() => {
-    if (borderColor) {
-        document.documentElement.style.setProperty('--border-color-custom', borderColor);
-    } else {
-        document.documentElement.style.removeProperty('--border-color-custom');
-    }
+    if (borderColor) document.documentElement.style.setProperty('--border-color-custom', borderColor);
+    else document.documentElement.style.removeProperty('--border-color-custom');
   }, [borderColor]);
+
+  useEffect(() => {
+    if (numberBtnColor) document.documentElement.style.setProperty('--button-number-bg-custom', numberBtnColor);
+    else document.documentElement.style.removeProperty('--button-number-bg-custom');
+  }, [numberBtnColor]);
+
+  useEffect(() => {
+    if (funcBtnColor) document.documentElement.style.setProperty('--button-function-bg-custom', funcBtnColor);
+    else document.documentElement.style.removeProperty('--button-function-bg-custom');
+  }, [funcBtnColor]);
+
 
    useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -345,10 +355,16 @@ function App() {
           setFontFamily={setFontFamily}
           fontScale={fontScale}
           setFontScale={setFontScale}
+          
           buttonTextColor={buttonTextColor}
           setButtonTextColor={setButtonTextColor}
           borderColor={borderColor}
           setBorderColor={setBorderColor}
+          numberBtnColor={numberBtnColor}
+          setNumberBtnColor={setNumberBtnColor}
+          funcBtnColor={funcBtnColor}
+          setFuncBtnColor={setFuncBtnColor}
+
           onOpenSupport={() => { setIsSettingsOpen(false); setIsSupportOpen(true); }}
           onShowAbout={() => { setIsSettingsOpen(false); setIsAboutOpen(true); }}
           onCheckForUpdates={onCheckForUpdates}

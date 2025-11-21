@@ -28,6 +28,10 @@ interface SettingsPanelProps {
   setButtonTextColor: (color: string | null) => void;
   borderColor: string | null;
   setBorderColor?: (color: string | null) => void;
+  numberBtnColor?: string | null;
+  setNumberBtnColor?: (color: string | null) => void;
+  funcBtnColor?: string | null;
+  setFuncBtnColor?: (color: string | null) => void;
   onOpenSupport: () => void;
   onShowAbout: () => void;
   onCheckForUpdates: () => void;
@@ -42,7 +46,7 @@ const convertArabicNumerals = (str: string | number): string => {
         .replace(/[۰۱۲۳۴۵۶۷۸۹]/g, d => String.fromCharCode(d.charCodeAt(0) - 1776));
 };
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, borderColor, setBorderColor, onOpenSupport, onShowAbout, onCheckForUpdates, deferredPrompt, onInstallApp }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, borderColor, setBorderColor, numberBtnColor, setNumberBtnColor, funcBtnColor, setFuncBtnColor, onOpenSupport, onShowAbout, onCheckForUpdates, deferredPrompt, onInstallApp }) => {
   const { vibrationEnabled, setVibrationEnabled, soundEnabled, setSoundEnabled, taxSettings, setTaxSettings, maxHistory, setMaxHistory, orientation, setOrientation } = settings;
   
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -129,6 +133,28 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
             </label>
             <div className="relative">
                 <input id="border-color-picker" type="color" value={borderColor || '#1A2B4D'} onChange={e => setBorderColor && setBorderColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
+            </div>
+        </div>
+
+         {/* Number Button Background Color Picker */}
+         <div className="mt-4">
+            <label htmlFor="number-btn-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
+                <span>خلفية أزرار الأرقام:</span>
+                <button onClick={() => setNumberBtnColor && setNumberBtnColor(null)} className={`text-xs text-[var(--accent-color)] hover:underline ${!numberBtnColor ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!numberBtnColor}>إعادة تعيين</button>
+            </label>
+            <div className="relative">
+                <input id="number-btn-color-picker" type="color" value={numberBtnColor || '#101B35'} onChange={e => setNumberBtnColor && setNumberBtnColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
+            </div>
+        </div>
+
+         {/* Function Button Background Color Picker */}
+         <div className="mt-4">
+            <label htmlFor="func-btn-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
+                <span>خلفية أزرار العمليات:</span>
+                <button onClick={() => setFuncBtnColor && setFuncBtnColor(null)} className={`text-xs text-[var(--accent-color)] hover:underline ${!funcBtnColor ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!funcBtnColor}>إعادة تعيين</button>
+            </label>
+            <div className="relative">
+                <input id="func-btn-color-picker" type="color" value={funcBtnColor || '#1A2B4D'} onChange={e => setFuncBtnColor && setFuncBtnColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
             </div>
         </div>
       </div>
