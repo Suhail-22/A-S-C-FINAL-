@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'abo-suhail-calc-v55-offline-final';
+const CACHE_NAME = 'abo-suhail-calc-v58-offline-final';
 
 // List of ALL files to pre-cache.
 const PRECACHE_URLS = [
@@ -39,7 +39,7 @@ const PRECACHE_URLS = [
   './services/geminiService.ts',
   './services/localErrorFixer.ts',
 
-  // External Resources
+  // External Resources (These will be fetched with no-cors)
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
   'https://esm.sh/react@18.3.1',
@@ -51,18 +51,28 @@ const PRECACHE_URLS = [
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then(async (cache) => {
       console.log('Installing & Pre-caching files...');
-      const urlsToCache = PRECACHE_URLS.map(url => {
-         // Using no-cors for external resources allows caching opaque responses
-         // This is critical for CDNs that might not send CORS headers for all requests
-         const mode = url.startsWith('http') ? 'no-cors' : 'same-origin';
-         return new Request(url, { mode: mode });
-      });
       
-      return cache.addAll(urlsToCache).catch(err => {
-          console.error('Precache failed for some files:', err);
+      // We must handle requests differently based on origin
+      const cachePromises = PRECACHE_URLS.map(async (url) => {
+        try {
+          // For external URLs (http/https), use no-cors to allow opaque responses
+          // For local files, use default (cors/same-origin)
+          const request = new Request(url, { 
+             mode: url.startsWith('http') ? 'no-cors' : 'same-origin',
+             cache: 'reload'
+          });
+          
+          const response = await fetch(request);
+          // Store in cache even if opaque (status 0)
+          return cache.put(request, response);
+        } catch (err) {
+          console.error('Failed to cache:', url, err);
+        }
       });
+
+      return Promise.all(cachePromises);
     })
   );
 });
@@ -90,21 +100,15 @@ self.addEventListener('fetch', (event) => {
       const cachedResponse = await cache.match(request);
       
       if (cachedResponse) {
-        if (navigator.onLine) {
-             // Revalidate in background
-             fetch(request, { mode: request.url.startsWith('http') ? 'no-cors' : 'same-origin' })
-             .then(networkResponse => {
-                 // Check if valid response (type opaque is ok for no-cors)
-                 if(networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
-                     cache.put(request, networkResponse.clone());
-                 }
-             }).catch(() => { /* ignore */ }); 
-        }
         return cachedResponse;
       }
 
       try {
-        const networkResponse = await fetch(request, { mode: request.url.startsWith('http') ? 'no-cors' : 'cors' });
+        // Network fallback with aggressive caching for offline support later
+        const networkResponse = await fetch(request, { 
+            mode: request.url.startsWith('http') ? 'no-cors' : 'cors' 
+        });
+        
         if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
              cache.put(request, networkResponse.clone());
         }

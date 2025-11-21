@@ -114,26 +114,26 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
           groupedAndFilteredHistory.map(({ date, items, total }, groupIndex) => (
             <div key={date} className="mb-2">
               
-              {/* Daily Header Re-design */}
+              {/* Daily Header Redesign: Date (Right) | Total (Center) | Count (Left) */}
               <div className={`flex items-center justify-between py-3 px-1 ${groupIndex > 0 ? 'border-t-2 border-[var(--border-secondary)]' : ''}`}>
                 
-                {/* Date (Right) */}
+                {/* Date (Right - Flex 1) */}
                 <div className="flex-1 text-right">
                    <h4 className="text-sm font-bold text-[var(--text-secondary)]">{date}</h4>
                 </div>
 
-                {/* Total (Center) */}
-                <div className="flex-0 px-2 flex flex-col items-center justify-center">
+                {/* Total (Center - Flex 1) */}
+                <div className="flex-1 px-1 flex flex-col items-center justify-center">
                    <span className="text-lg font-extrabold text-green-500 whitespace-nowrap" dir="ltr">
                       {total.toLocaleString('en-US', { maximumFractionDigits: 2, useGrouping: false })}
                    </span>
                 </div>
 
-                {/* Count + Share (Left) */}
+                {/* Count + Share (Left - Flex 1) */}
                 <div className="flex-1 flex justify-end items-center gap-2">
-                     <div className="text-[10px] text-[var(--text-secondary)] whitespace-nowrap">
+                     <span className="text-[10px] font-bold text-[var(--text-secondary)] whitespace-nowrap">
                        {items.length} عمليات
-                     </div>
+                     </span>
                      <button onClick={() => onShareHistory(items)} className="p-1 rounded bg-[var(--bg-inset)] text-[var(--text-secondary)] hover:text-[var(--accent-color)] transition-colors" aria-label={`مشاركة عمليات يوم ${date}`}>
                         <Icon name="share_small" className="w-4 h-4" />
                     </button>

@@ -39,6 +39,7 @@ function App() {
   const [borderColor, setBorderColor] = useLocalStorage<string | null>('calcBorderColor_v1', null);
   const [numberBtnColor, setNumberBtnColor] = useLocalStorage<string | null>('calcNumberBtnColor_v1', null);
   const [funcBtnColor, setFuncBtnColor] = useLocalStorage<string | null>('calcFuncBtnColor_v1', null);
+  const [calcBgColor, setCalcBgColor] = useLocalStorage<string | null>('calcBgColor_v1', null);
 
   const showNotification = useCallback((message: string) => {
     setNotification({ message, show: true });
@@ -132,6 +133,11 @@ function App() {
     if (funcBtnColor) document.documentElement.style.setProperty('--button-function-bg-custom', funcBtnColor);
     else document.documentElement.style.removeProperty('--button-function-bg-custom');
   }, [funcBtnColor]);
+
+  useEffect(() => {
+    if (calcBgColor) document.documentElement.style.setProperty('--bg-calculator-custom', calcBgColor);
+    else document.documentElement.style.removeProperty('--bg-calculator-custom');
+  }, [calcBgColor]);
 
 
    useEffect(() => {
@@ -364,6 +370,8 @@ function App() {
           setNumberBtnColor={setNumberBtnColor}
           funcBtnColor={funcBtnColor}
           setFuncBtnColor={setFuncBtnColor}
+          calcBgColor={calcBgColor}
+          setCalcBgColor={setCalcBgColor}
 
           onOpenSupport={() => { setIsSettingsOpen(false); setIsSupportOpen(true); }}
           onShowAbout={() => { setIsSettingsOpen(false); setIsAboutOpen(true); }}

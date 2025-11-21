@@ -32,6 +32,8 @@ interface SettingsPanelProps {
   setNumberBtnColor?: (color: string | null) => void;
   funcBtnColor?: string | null;
   setFuncBtnColor?: (color: string | null) => void;
+  calcBgColor?: string | null;
+  setCalcBgColor?: (color: string | null) => void;
   onOpenSupport: () => void;
   onShowAbout: () => void;
   onCheckForUpdates: () => void;
@@ -46,7 +48,7 @@ const convertArabicNumerals = (str: string | number): string => {
         .replace(/[۰۱۲۳۴۵۶۷۸۹]/g, d => String.fromCharCode(d.charCodeAt(0) - 1776));
 };
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, borderColor, setBorderColor, numberBtnColor, setNumberBtnColor, funcBtnColor, setFuncBtnColor, onOpenSupport, onShowAbout, onCheckForUpdates, deferredPrompt, onInstallApp }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, borderColor, setBorderColor, numberBtnColor, setNumberBtnColor, funcBtnColor, setFuncBtnColor, calcBgColor, setCalcBgColor, onOpenSupport, onShowAbout, onCheckForUpdates, deferredPrompt, onInstallApp }) => {
   const { vibrationEnabled, setVibrationEnabled, soundEnabled, setSoundEnabled, taxSettings, setTaxSettings, maxHistory, setMaxHistory, orientation, setOrientation } = settings;
   
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -128,11 +130,22 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
         {/* Border Color Picker */}
         <div className="mt-4">
             <label htmlFor="border-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
-                <span>لون الإطار (Border):</span>
+                <span>لون الإطار (الحدود):</span>
                 <button onClick={() => setBorderColor && setBorderColor(null)} className={`text-xs text-[var(--accent-color)] hover:underline ${!borderColor ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!borderColor}>إعادة تعيين</button>
             </label>
             <div className="relative">
                 <input id="border-color-picker" type="color" value={borderColor || '#1A2B4D'} onChange={e => setBorderColor && setBorderColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
+            </div>
+        </div>
+
+         {/* Calculator Body Background Color Picker */}
+         <div className="mt-4">
+            <label htmlFor="calc-bg-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
+                <span>لون خلفية الحاسبة:</span>
+                <button onClick={() => setCalcBgColor && setCalcBgColor(null)} className={`text-xs text-[var(--accent-color)] hover:underline ${!calcBgColor ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!calcBgColor}>إعادة تعيين</button>
+            </label>
+            <div className="relative">
+                <input id="calc-bg-color-picker" type="color" value={calcBgColor || '#050A14'} onChange={e => setCalcBgColor && setCalcBgColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
             </div>
         </div>
 

@@ -50,10 +50,15 @@ const Header: React.FC<HeaderProps> = ({ taxSettings, onToggleSettings, onShare,
         </div>
       </div>
 
-      {/* Tax Label - Centered or Flexible */}
-      <div className={`text-sm py-1 px-2.5 rounded-[8px] bg-[var(--bg-inset)] text-[var(--text-secondary)] whitespace-nowrap transition-opacity duration-300 flex items-center gap-1 ${isEnabled ? 'opacity-100' : 'opacity-60'}`}>
-         <span className="text-[11px] opacity-80">الضريبة:</span>
-         <span className="font-bold text-[var(--text-primary)] inline-block" dir="ltr">{getTaxRateLabel()}</span>
+      {/* Center Section: Branding + Tax Label */}
+      <div className="flex flex-col items-center justify-center gap-0.5">
+         <span className="text-[var(--accent-color)] text-base select-none opacity-90" style={{ fontFamily: 'serif' }}>
+            𝒜𝒷ℴ 𝒮𝓊𝒽𝒶𝒾𝓁
+         </span>
+         <div className={`text-sm py-1 px-2.5 rounded-[8px] bg-[var(--bg-inset)] text-[var(--text-secondary)] whitespace-nowrap transition-opacity duration-300 flex items-center gap-1 ${isEnabled ? 'opacity-100' : 'opacity-60'}`}>
+            <span className="text-[11px] opacity-80">الضريبة:</span>
+            <span className="font-bold text-[var(--text-primary)] inline-block" dir="ltr">{getTaxRateLabel()}</span>
+         </div>
       </div>
 
       <div className="flex items-center gap-2">
