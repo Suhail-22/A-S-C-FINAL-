@@ -36,9 +36,9 @@ interface SettingsPanelProps {
   setCalcBgColor?: (color: string | null) => void;
   onOpenSupport: () => void;
   onShowAbout: () => void;
-  onCheckForUpdates: () => void;
   deferredPrompt?: any;
   onInstallApp?: () => void;
+  // onCheckForUpdates removed
 }
 
 const convertArabicNumerals = (str: string | number): string => {
@@ -66,7 +66,7 @@ const SettingsSection = ({ title, isOpen, onToggle, children, icon }: { title: s
     </div>
 );
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, borderColor, setBorderColor, numberBtnColor, setNumberBtnColor, funcBtnColor, setFuncBtnColor, calcBgColor, setCalcBgColor, onOpenSupport, onShowAbout, onCheckForUpdates, deferredPrompt, onInstallApp }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, borderColor, setBorderColor, numberBtnColor, setNumberBtnColor, funcBtnColor, setFuncBtnColor, calcBgColor, setCalcBgColor, onOpenSupport, onShowAbout, deferredPrompt, onInstallApp }) => {
   const { vibrationEnabled, setVibrationEnabled, soundEnabled, setSoundEnabled, taxSettings, setTaxSettings, maxHistory, setMaxHistory, orientation, setOrientation } = settings;
   
   // State to track which section is expanded
