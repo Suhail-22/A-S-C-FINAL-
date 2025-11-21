@@ -26,9 +26,6 @@
     }
   ],
   "display": "standalone",
-  "display_override": [
-    "window-controls-overlay"
-  ],
   "orientation": "any",
   "dir": "rtl",
   "theme_color": "#0F172A",
