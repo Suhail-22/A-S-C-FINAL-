@@ -1,21 +1,23 @@
 
-const CACHE_NAME = 'abo-suhail-calc-v40-dynamic';
+const CACHE_NAME = 'abo-suhail-calc-v45-offline-final';
 
-// Files we explicitly want to cache immediately on install
+// CRITICAL: We must cache the Logic (index.tsx) not just the Skeleton (index.html)
 const PRECACHE_URLS = [
   './',
   './index.html',
+  './index.tsx', 
   './manifest.json',
   './assets/icon.svg',
   './offline.html'
 ];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  self.skipWaiting(); // Activate immediately
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
+      console.log('Installing & Pre-caching critical files...');
       return cache.addAll(PRECACHE_URLS).catch(err => {
-          console.warn('Precache failed for some items:', err);
+          console.error('Precache failed:', err);
       });
     })
   );
@@ -27,62 +29,46 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => self.clients.claim()) // Take control immediately
   );
 });
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  const url = new URL(request.url);
+  
+  // Ignore non-GET requests
+  if (request.method !== 'GET') return;
 
-  // 1. Navigation requests (HTML pages)
-  // Strategy: Network First, falling back to Cache, falling back to Offline Page
-  // This ensures users get the latest version if online, but app works if offline.
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // If network fetch succeeds, cache it and return it
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          return response;
-        })
-        .catch(() => {
-          // If network fails, try cache
-          return caches.match(request).then((cachedResponse) => {
-             if (cachedResponse) return cachedResponse;
-             // If not in cache, try index.html (for SPA routing)
-             return caches.match('./index.html').then(indexResp => {
-                 return indexResp || caches.match('./offline.html');
-             });
-          });
-        })
-    );
-    return;
-  }
+  // STRATEGY: Stale-While-Revalidate (Optimized for PWA)
+  // 1. Return Cached version IMMEDIATELY (Fastest, Offline works)
+  // 2. Fetch from Network in background to update Cache for NEXT time
+  // 3. If Cache is empty and Network fails -> Show Offline Page
 
-  // 2. Asset requests (JS, CSS, Images, Fonts)
-  // Strategy: Stale-While-Revalidate
-  // Return cached version immediately (fast!), then update cache in background.
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request).then((networkResponse) => {
-        // Update cache with new version
+    caches.open(CACHE_NAME).then(async (cache) => {
+      const cachedResponse = await cache.match(request);
+      
+      // Network Fetch Promise (Updates the cache)
+      const networkFetch = fetch(request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+           cache.put(request, networkResponse.clone());
         }
         return networkResponse;
       }).catch(() => {
-          // Network failed, nothing to do (we hopefully returned cachedResponse)
+         // Network failed
+         // If we didn't have a cached response, we need to return the offline page
+         if (!cachedResponse && request.mode === 'navigate') {
+             return cache.match('./offline.html');
+         }
       });
 
-      // Return cached response if available, otherwise wait for network
-      return cachedResponse || fetchPromise;
+      // Return cached response immediately if we have it, otherwise wait for network
+      return cachedResponse || networkFetch;
     })
   );
 });
