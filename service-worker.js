@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'abo-suhail-offline-v300';
+const CACHE_NAME = 'abo-suhail-offline-v301';
 
 // Explicitly list the external libraries used in index.html importmap
 // This is CRITICAL for the app to run offline.
@@ -28,11 +28,11 @@ self.addEventListener('install', (event) => {
       // 1. Cache Local Assets (Must succeed)
       await cache.addAll(LOCAL_ASSETS);
       
-      // 2. Cache External Libraries (Best Effort / No-CORS)
-      // We iterate manually to ensure one failure doesn't stop the whole install
+      // 2. Cache External Libraries (Best Effort / CORS)
+      // Changed from 'no-cors' to 'cors' so scripts can execute properly
       const externalPromises = EXTERNAL_LIBS.map(async (url) => {
         try {
-          const request = new Request(url, { mode: 'no-cors' });
+          const request = new Request(url, { mode: 'cors' });
           const response = await fetch(request);
           return cache.put(request, response);
         } catch (e) {

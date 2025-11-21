@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useMemo } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { parseExpression, preprocessExpression } from '../services/calculationEngine';
@@ -351,7 +352,9 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     setHistory(prevHistory => prevHistory.filter(item => item.id !== id));
   }, [setHistory]);
 
-  const loadFromHistory = useCallback((expression: string) => {
+  // Updated: Accepts 'HistoryItem | string' to prevent crashes
+  const loadFromHistory = useCallback((item: HistoryItem | string) => {
+    const expression = typeof item === 'string' ? item : item.expression;
     setInput(expression);
     setCalculationExecuted(false);
     setError(null);
