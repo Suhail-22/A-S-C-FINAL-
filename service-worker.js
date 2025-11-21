@@ -1,7 +1,7 @@
 
-const CACHE_NAME = 'abo-suhail-calc-v62-offline-fixed';
+const CACHE_NAME = 'abo-suhail-calc-v63-best-effort';
 
-// List of ALL files to pre-cache.
+// List of files to pre-cache.
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -40,7 +40,7 @@ const PRECACHE_URLS = [
   './services/localErrorFixer.ts',
 
   // External Resources 
-  // IMPORTANT: These must be fetched with CORS enabled to work as Modules/Scripts
+  // We will try to cache these, but won't fail installation if they fail
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
   'https://esm.sh/react@18.3.1',
@@ -53,31 +53,37 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      console.log('Installing & Pre-caching files...');
+      console.log('[SW] Installing & Pre-caching files...');
       
+      // Best Effort Strategy:
+      // We attempt to cache everything, but we don't let one failure break the whole app.
       const cachePromises = PRECACHE_URLS.map(async (url) => {
         try {
-          // CRITICAL FIX: Use 'cors' mode. 
-          // 'no-cors' creates opaque responses which fail for ES Modules (react/react-dom).
+          // Use 'cors' mode for external scripts to ensure they are usable.
+          // If it fails (e.g. opaque response for fonts), we might retry with no-cors or just log it.
+          // For this specific app, esm.sh supports CORS, so 'cors' is correct for scripts.
           const request = new Request(url, { 
              mode: 'cors', 
              credentials: 'omit',
-             cache: 'reload' // Force network fetch to ensure fresh cache
+             cache: 'reload' // Force network fetch
           });
           
           const response = await fetch(request);
           
           if (!response.ok) {
-            throw new Error(`Network response was not ok for ${url}`);
+            throw new Error(`Network response was not ok for ${url} (${response.status})`);
           }
           
-          return cache.put(request, response);
+          return await cache.put(request, response);
         } catch (err) {
-          console.error('Failed to cache:', url, err);
+          console.warn(`[SW] Failed to cache optional resource: ${url}`, err);
+          // We do NOT throw here, allowing the installation to succeed 
+          // even if a specific font or asset fails.
         }
       });
 
-      return Promise.all(cachePromises);
+      await Promise.all(cachePromises);
+      console.log('[SW] Install completed (Best Effort).');
     })
   );
 });
@@ -88,7 +94,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
+            console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -99,31 +105,39 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
+  
+  // Only handle GET requests
   if (request.method !== 'GET') return;
 
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
+      // 1. Try to find in Cache
       const cachedResponse = await cache.match(request);
-      
       if (cachedResponse) {
         return cachedResponse;
       }
 
+      // 2. If not in cache, try Network
       try {
         const networkResponse = await fetch(request);
         
-        // Cache valid responses for future offline use
+        // Check if it's a valid response we want to cache for next time
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
              cache.put(request, networkResponse.clone());
         }
         return networkResponse;
       } catch (e) {
-         // If offline and resource not found
-         console.log('Offline fetch failed:', request.url);
+         // 3. If Network fails (Offline)
+         console.log('[SW] Offline fetch failed:', request.url);
+         
+         // If navigating to a page, show offline.html
          if (request.mode === 'navigate') {
-             return cache.match('./offline.html');
+             const offlinePage = await cache.match('./offline.html');
+             if (offlinePage) return offlinePage;
          }
-         // Fallback for images/fonts could be added here
+         
+         // Fallback: if we are trying to load a script/module offline and it's missing,
+         // we can't do much, but preventing the crash is handled by the app logic mostly.
          throw e;
       }
     })

@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { TaxSettings } from '../types';
 import Icon from './Icon';
 
@@ -48,8 +47,33 @@ const convertArabicNumerals = (str: string | number): string => {
         .replace(/[۰۱۲۳۴۵۶۷۸۹]/g, d => String.fromCharCode(d.charCodeAt(0) - 1776));
 };
 
+// Helper component for Collapsible Sections
+const SettingsSection = ({ title, isOpen, onToggle, children, icon }: { title: string, isOpen: boolean, onToggle: () => void, children?: React.ReactNode, icon?: string }) => (
+    <div className="mb-3 border border-[var(--border-secondary)] rounded-xl bg-[var(--bg-inset-light)] overflow-hidden transition-all duration-300">
+        <button 
+            onClick={onToggle}
+            className="w-full flex items-center justify-between p-3 text-right font-bold text-[var(--text-primary)] hover:bg-[var(--bg-inset)] transition-colors"
+        >
+            <span className="flex items-center gap-2">{icon} {title}</span>
+            <span className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : 'rotate-0'}`}>▼</span>
+        </button>
+        <div className={`transition-[max-height] duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className="p-3 pt-0 border-t border-[var(--border-secondary)] border-opacity-30">
+                {children}
+            </div>
+        </div>
+    </div>
+);
+
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings, theme, onThemeChange, fontFamily, setFontFamily, fontScale, setFontScale, buttonTextColor, setButtonTextColor, borderColor, setBorderColor, numberBtnColor, setNumberBtnColor, funcBtnColor, setFuncBtnColor, calcBgColor, setCalcBgColor, onOpenSupport, onShowAbout, onCheckForUpdates, deferredPrompt, onInstallApp }) => {
   const { vibrationEnabled, setVibrationEnabled, soundEnabled, setSoundEnabled, taxSettings, setTaxSettings, maxHistory, setMaxHistory, orientation, setOrientation } = settings;
+  
+  // State to track which section is expanded
+  const [expandedSection, setExpandedSection] = useState<string | null>('appearance');
+
+  const toggleSection = (section: string) => {
+      setExpandedSection(expandedSection === section ? null : section);
+  };
   
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -82,108 +106,114 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
         </div>
       )}
 
-      <div className="mb-6">
-        <h4 className="text-lg font-semibold text-[var(--text-secondary)] mb-3">🎨 المظهر</h4>
-        <div className="grid grid-cols-3 gap-2 p-1 rounded-xl bg-[var(--bg-inset)]">
-          <button onClick={() => onThemeChange('light')} className={`py-2 rounded-lg text-sm transition-all ${theme === 'light' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold' : ''}`}>فاتح</button>
-          <button onClick={() => onThemeChange('dark')} className={`py-2 rounded-lg text-sm transition-all ${theme === 'dark' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold' : ''}`}>داكن</button>
-          <button onClick={() => onThemeChange('system')} className={`py-2 rounded-lg text-sm transition-all ${theme === 'system' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold' : ''}`}>نظام</button>
-        </div>
-      </div>
-      <div className="mb-6">
-        <h4 className="text-lg font-semibold text-[var(--text-secondary)] mb-3">📱 اتجاه الشاشة</h4>
-        <div className="flex gap-2 p-1 rounded-xl bg-[var(--bg-inset)]">
-            <button onClick={() => setOrientation('auto')} className={`flex-1 py-2 rounded-lg text-sm flex items-center justify-center gap-2 transition-all ${orientation === 'auto' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold' : 'opacity-70'}`}>
-                 <Icon name="rotate" className="w-4 h-4" /> تلقائي
-            </button>
-            <button onClick={() => setOrientation('portrait')} className={`flex-1 py-2 rounded-lg text-sm flex items-center justify-center gap-2 transition-all ${orientation === 'portrait' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold' : 'opacity-70'}`}>
-                 <Icon name="lock_portrait" className="w-4 h-4" /> عمودي
-            </button>
-        </div>
-      </div>
-      <div className="mb-6">
-        <h4 className="text-lg font-semibold text-[var(--text-secondary)] mb-3">✒️ الخطوط والألوان</h4>
+      {/* --- Appearance & Colors Section (Main Collapsible) --- */}
+      <SettingsSection 
+        title="تخصيص المظهر والألوان" 
+        icon="🎨"
+        isOpen={expandedSection === 'appearance'} 
+        onToggle={() => toggleSection('appearance')}
+      >
+        {/* Tab 1: Theme & Fonts */}
         <div className="mb-4">
-            <label htmlFor="font-family-select" className="block text-[var(--text-secondary)] mb-2 text-sm">نوع الخط:</label>
-            <select id="font-family-select" value={fontFamily} onChange={e => setFontFamily(e.target.value)} className="w-full p-2.5 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] text-base">
-                <option value='Tajawal'>Tajawal (افتراضي)</option>
-                <option value='Cairo'>Cairo</option>
-                <option value='Almarai'>Almarai</option>
-            </select>
+            <h5 className="text-sm font-bold text-[var(--text-secondary)] mb-2 border-b border-[var(--border-secondary)] pb-1">النسق والخطوط</h5>
+            
+            {/* Theme Buttons */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+                <button onClick={() => onThemeChange('light')} className={`py-1.5 rounded-lg text-xs transition-all border border-[var(--border-secondary)] ${theme === 'light' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold border-transparent' : ''}`}>فاتح</button>
+                <button onClick={() => onThemeChange('dark')} className={`py-1.5 rounded-lg text-xs transition-all border border-[var(--border-secondary)] ${theme === 'dark' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold border-transparent' : ''}`}>داكن</button>
+                <button onClick={() => onThemeChange('system')} className={`py-1.5 rounded-lg text-xs transition-all border border-[var(--border-secondary)] ${theme === 'system' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] font-bold border-transparent' : ''}`}>نظام</button>
+            </div>
+
+            {/* Font Selection */}
+            <div className="mb-3">
+                <label htmlFor="font-family-select" className="block text-[var(--text-secondary)] mb-1 text-xs">نوع الخط:</label>
+                <select id="font-family-select" value={fontFamily} onChange={e => setFontFamily(e.target.value)} className="w-full p-2 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-panel)] text-[var(--text-primary)] text-sm">
+                    <option value='Tajawal'>Tajawal (افتراضي)</option>
+                    <option value='Cairo'>Cairo</option>
+                    <option value='Almarai'>Almarai</option>
+                </select>
+            </div>
+
+            {/* Font Scale */}
+            <div className="mb-2">
+                <label htmlFor="font-size-slider" className="block text-[var(--text-secondary)] mb-1 text-xs">{`حجم الخط: (${Math.round(fontScale * 100)}%)`}</label>
+                <input id="font-size-slider" type='range' min='0.85' max='1.15' step='0.05' value={fontScale} onChange={e => setFontScale(parseFloat(e.target.value))} className='w-full h-1.5 bg-[var(--bg-panel)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-color)]' />
+            </div>
         </div>
+
+        {/* Tab 2: Structure Colors */}
         <div className="mb-4">
-            <label htmlFor="font-size-slider" className="block text-[var(--text-secondary)] mb-2 text-sm">{`حجم الخط: (${Math.round(fontScale * 100)}%)`}</label>
-            <input id="font-size-slider" type='range' min='0.85' max='1.15' step='0.05' value={fontScale} onChange={e => setFontScale(parseFloat(e.target.value))} className='w-full h-2 bg-[var(--bg-inset)] rounded-lg appearance-none cursor-pointer accent-[var(--accent-color)]' />
-        </div>
-        
-        {/* Button Text Color Picker */}
-        <div className="mt-4">
-            <label htmlFor="button-text-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
-                <span>لون خط الأزرار:</span>
-                <button onClick={() => setButtonTextColor(null)} className={`text-xs text-[var(--accent-color)] hover:underline ${!buttonTextColor ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!buttonTextColor}>إعادة تعيين</button>
-            </label>
-            <div className="relative">
-                <input id="button-text-color-picker" type="color" value={buttonTextColor || '#ffffff'} onChange={e => setButtonTextColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
+             <h5 className="text-sm font-bold text-[var(--text-secondary)] mb-2 border-b border-[var(--border-secondary)] pb-1">ألوان الهيكل</h5>
+             
+             {/* Calculator Body Background */}
+            <div className="flex justify-between items-center mb-2">
+                <label className="text-[var(--text-primary)] text-xs">لون الخلفية:</label>
+                <div className="flex items-center gap-2">
+                    <input type="color" value={calcBgColor || '#050A14'} onChange={e => setCalcBgColor && setCalcBgColor(e.target.value)} className="w-8 h-6 p-0 rounded border-none bg-transparent cursor-pointer" />
+                    <button onClick={() => setCalcBgColor && setCalcBgColor(null)} className={`text-xs text-[var(--accent-color)] ${!calcBgColor ? 'opacity-50' : ''}`} disabled={!calcBgColor}>↺</button>
+                </div>
+            </div>
+
+            {/* Border Color */}
+            <div className="flex justify-between items-center mb-2">
+                <label className="text-[var(--text-primary)] text-xs">لون الإطار:</label>
+                <div className="flex items-center gap-2">
+                    <input type="color" value={borderColor || '#1A2B4D'} onChange={e => setBorderColor && setBorderColor(e.target.value)} className="w-8 h-6 p-0 rounded border-none bg-transparent cursor-pointer" />
+                    <button onClick={() => setBorderColor && setBorderColor(null)} className={`text-xs text-[var(--accent-color)] ${!borderColor ? 'opacity-50' : ''}`} disabled={!borderColor}>↺</button>
+                </div>
             </div>
         </div>
 
-        {/* Border Color Picker */}
-        <div className="mt-4">
-            <label htmlFor="border-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
-                <span>لون الإطار (الحدود):</span>
-                <button onClick={() => setBorderColor && setBorderColor(null)} className={`text-xs text-[var(--accent-color)] hover:underline ${!borderColor ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!borderColor}>إعادة تعيين</button>
-            </label>
-            <div className="relative">
-                <input id="border-color-picker" type="color" value={borderColor || '#1A2B4D'} onChange={e => setBorderColor && setBorderColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
+        {/* Tab 3: Button Colors */}
+        <div>
+             <h5 className="text-sm font-bold text-[var(--text-secondary)] mb-2 border-b border-[var(--border-secondary)] pb-1">ألوان الأزرار</h5>
+             
+             {/* Number Btn Color */}
+            <div className="flex justify-between items-center mb-2">
+                <label className="text-[var(--text-primary)] text-xs">خلفية الأرقام:</label>
+                <div className="flex items-center gap-2">
+                    <input type="color" value={numberBtnColor || '#101B35'} onChange={e => setNumberBtnColor && setNumberBtnColor(e.target.value)} className="w-8 h-6 p-0 rounded border-none bg-transparent cursor-pointer" />
+                    <button onClick={() => setNumberBtnColor && setNumberBtnColor(null)} className={`text-xs text-[var(--accent-color)] ${!numberBtnColor ? 'opacity-50' : ''}`} disabled={!numberBtnColor}>↺</button>
+                </div>
             </div>
-        </div>
 
-         {/* Calculator Body Background Color Picker */}
-         <div className="mt-4">
-            <label htmlFor="calc-bg-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
-                <span>لون خلفية الحاسبة:</span>
-                <button onClick={() => setCalcBgColor && setCalcBgColor(null)} className={`text-xs text-[var(--accent-color)] hover:underline ${!calcBgColor ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!calcBgColor}>إعادة تعيين</button>
-            </label>
-            <div className="relative">
-                <input id="calc-bg-color-picker" type="color" value={calcBgColor || '#050A14'} onChange={e => setCalcBgColor && setCalcBgColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
+             {/* Func Btn Color */}
+             <div className="flex justify-between items-center mb-2">
+                <label className="text-[var(--text-primary)] text-xs">خلفية العمليات:</label>
+                <div className="flex items-center gap-2">
+                    <input type="color" value={funcBtnColor || '#1A2B4D'} onChange={e => setFuncBtnColor && setFuncBtnColor(e.target.value)} className="w-8 h-6 p-0 rounded border-none bg-transparent cursor-pointer" />
+                    <button onClick={() => setFuncBtnColor && setFuncBtnColor(null)} className={`text-xs text-[var(--accent-color)] ${!funcBtnColor ? 'opacity-50' : ''}`} disabled={!funcBtnColor}>↺</button>
+                </div>
             </div>
-        </div>
 
-         {/* Number Button Background Color Picker */}
-         <div className="mt-4">
-            <label htmlFor="number-btn-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
-                <span>خلفية أزرار الأرقام:</span>
-                <button onClick={() => setNumberBtnColor && setNumberBtnColor(null)} className={`text-xs text-[var(--accent-color)] hover:underline ${!numberBtnColor ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!numberBtnColor}>إعادة تعيين</button>
-            </label>
-            <div className="relative">
-                <input id="number-btn-color-picker" type="color" value={numberBtnColor || '#101B35'} onChange={e => setNumberBtnColor && setNumberBtnColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
+            {/* Text Color */}
+            <div className="flex justify-between items-center mb-2">
+                <label className="text-[var(--text-primary)] text-xs">لون النص:</label>
+                <div className="flex items-center gap-2">
+                    <input type="color" value={buttonTextColor || '#ffffff'} onChange={e => setButtonTextColor(e.target.value)} className="w-8 h-6 p-0 rounded border-none bg-transparent cursor-pointer" />
+                    <button onClick={() => setButtonTextColor(null)} className={`text-xs text-[var(--accent-color)] ${!buttonTextColor ? 'opacity-50' : ''}`} disabled={!buttonTextColor}>↺</button>
+                </div>
             </div>
         </div>
+      </SettingsSection>
 
-         {/* Function Button Background Color Picker */}
-         <div className="mt-4">
-            <label htmlFor="func-btn-color-picker" className="flex justify-between items-center text-[var(--text-secondary)] text-sm mb-2">
-                <span>خلفية أزرار العمليات:</span>
-                <button onClick={() => setFuncBtnColor && setFuncBtnColor(null)} className={`text-xs text-[var(--accent-color)] hover:underline ${!funcBtnColor ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!funcBtnColor}>إعادة تعيين</button>
-            </label>
-            <div className="relative">
-                <input id="func-btn-color-picker" type="color" value={funcBtnColor || '#1A2B4D'} onChange={e => setFuncBtnColor && setFuncBtnColor(e.target.value)} className="w-full h-10 p-1 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] cursor-pointer" />
-            </div>
-        </div>
-      </div>
-      <hr className="border-[var(--border-secondary)] my-4" />
-      <div className="mb-6">
-        <h4 className="text-lg font-semibold text-[var(--text-secondary)] mb-3">💰 إعدادات الضريبة</h4>
-        <label className="flex items-center mb-4 text-[var(--text-secondary)] font-bold">
+      {/* --- Tax Settings Section --- */}
+      <SettingsSection 
+        title="إعدادات الضريبة" 
+        icon="💰"
+        isOpen={expandedSection === 'tax'} 
+        onToggle={() => toggleSection('tax')}
+      >
+        <label className="flex items-center mb-4 text-[var(--text-secondary)] font-bold text-sm">
           <input type="checkbox" name="isEnabled" checked={taxSettings.isEnabled} onChange={handleTaxChange} className="ml-3 w-5 h-5 accent-[var(--accent-color)]" />
           تفعيل حساب الضريبة
         </label>
         <div className={`transition-opacity ${taxSettings.isEnabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
-            <label className={`flex items-center mb-4 text-[var(--text-secondary)]`}>
+            <label className={`flex items-center mb-4 text-[var(--text-secondary)] text-sm`}>
                 <input type="checkbox" name="showTaxPerNumber" checked={taxSettings.showTaxPerNumber} onChange={handleTaxChange} disabled={!taxSettings.isEnabled} className="ml-3 w-5 h-5 accent-[var(--accent-color)]" />
                 عرض الضريبة فوق كل رقم
             </label>
-            <select name="mode" value={taxSettings.mode} onChange={handleTaxChange} className="w-full p-2.5 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] mb-4 text-base">
+            <select name="mode" value={taxSettings.mode} onChange={handleTaxChange} className="w-full p-2.5 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-panel)] text-[var(--text-primary)] mb-4 text-sm">
               <option value="add-15">إضافة 15%</option>
               <option value="extract-custom">استخلاص نسبة مخصصة</option>
               <option value="divide-93">القسمة على 0.93</option>
@@ -191,7 +221,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
             </select>
             {['custom', 'extract-custom'].includes(taxSettings.mode) && (
               <div className="flex items-center justify-between mb-4 animate-fade-in-down">
-                <label className="text-[var(--text-secondary)]">النسبة المئوية:</label>
+                <label className="text-[var(--text-secondary)] text-sm">النسبة المئوية:</label>
                 <input 
                     type="text" 
                     inputMode="decimal"
@@ -199,38 +229,57 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
                     onChange={handleTaxRateChange} 
                     onBlur={() => setTaxSettings(prev => ({...prev, rate: parseFloat(String(prev.rate)) || 0 }))}
                     placeholder="%" 
-                    className="w-24 p-2.5 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] text-base text-center direction-ltr" 
+                    className="w-24 p-2 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-panel)] text-[var(--text-primary)] text-sm text-center direction-ltr" 
                 />
               </div>
             )}
         </div>
-      </div>
-       <div className="mb-6">
-        <h4 className="text-lg font-semibold text-[var(--text-secondary)] mb-3">⚙️ إعدادات عامة</h4>
-        <label className="flex items-center justify-between text-[var(--text-secondary)] mb-4">
+      </SettingsSection>
+
+      {/* --- General Settings Section --- */}
+      <SettingsSection 
+        title="إعدادات عامة" 
+        icon="🛠️"
+        isOpen={expandedSection === 'general'} 
+        onToggle={() => toggleSection('general')}
+      >
+         {/* Orientation */}
+         <div className="mb-4">
+             <h6 className="text-xs text-[var(--text-secondary)] mb-2">اتجاه الشاشة</h6>
+             <div className="flex gap-2">
+                <button onClick={() => setOrientation('auto')} className={`flex-1 py-1.5 rounded-lg text-xs flex items-center justify-center gap-1 transition-all border border-[var(--border-secondary)] ${orientation === 'auto' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] border-transparent' : 'opacity-80'}`}>
+                    <Icon name="rotate" className="w-3 h-3" /> تلقائي
+                </button>
+                <button onClick={() => setOrientation('portrait')} className={`flex-1 py-1.5 rounded-lg text-xs flex items-center justify-center gap-1 transition-all border border-[var(--border-secondary)] ${orientation === 'portrait' ? 'bg-[var(--accent-color)] text-[var(--accent-color-contrast)] border-transparent' : 'opacity-80'}`}>
+                    <Icon name="lock_portrait" className="w-3 h-3" /> عمودي
+                </button>
+            </div>
+         </div>
+
+        <label className="flex items-center justify-between text-[var(--text-secondary)] text-sm mb-4">
           <span>الحد الأقصى للسجل:</span>
           <input type="number" value={maxHistory} onChange={(e) => {
               const val = parseInt(e.target.value, 10);
               if (val > 0 && val <= 500) {
                 setMaxHistory(val);
               }
-            }} min="1" max="500" className="w-24 p-2 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] text-center"
+            }} min="1" max="500" className="w-20 p-1.5 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-panel)] text-[var(--text-primary)] text-center text-sm"
           />
         </label>
-        <label className="flex items-center justify-between text-[var(--text-secondary)] mb-4">
-          <span>تفعيل الاهتزاز عند الضغط</span>
+        <label className="flex items-center justify-between text-[var(--text-secondary)] text-sm mb-4">
+          <span>تفعيل الاهتزاز</span>
           <input type="checkbox" checked={vibrationEnabled} onChange={(e) => setVibrationEnabled(e.target.checked)} className="w-5 h-5 accent-[var(--accent-color)]" />
         </label>
-        <label className="flex items-center justify-between text-[var(--text-secondary)]">
+        <label className="flex items-center justify-between text-[var(--text-secondary)] text-sm">
           <span>تفعيل المؤثرات الصوتية</span>
           <input type="checkbox" checked={soundEnabled} onChange={(e) => setSoundEnabled(e.target.checked)} className="w-5 h-5 accent-[var(--accent-color)]" />
         </label>
-      </div>
-      <hr className="border-[var(--border-secondary)] my-4" />
-      <div className="flex flex-col gap-3">
-        <button onClick={onCheckForUpdates} className="w-full py-3 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] font-bold text-base hover:brightness-95">✨ التحقق من التحديثات</button>
-        <button onClick={onShowAbout} className="w-full py-3 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] font-bold text-base hover:brightness-95">ℹ️ حول الآلة الحاسبة</button>
-        <button onClick={onOpenSupport} className="w-full bg-gradient-to-br from-green-600/50 to-green-700/60 text-white border border-green-400/80 rounded-xl py-3 font-bold text-lg shadow-[0_5px_12px_rgba(0,0,0,0.35),0_0_18px_rgba(100,220,100,0.35)] mt-3 hover:from-green-600/60">💬 تواصل مع الدعم</button>
+      </SettingsSection>
+
+      <div className="mt-6 flex flex-col gap-3">
+        <button onClick={onCheckForUpdates} className="w-full py-3 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] font-bold text-base hover:brightness-95 transition-colors">✨ التحقق من التحديثات</button>
+        <button onClick={onShowAbout} className="w-full py-3 rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-inset)] text-[var(--text-primary)] font-bold text-base hover:brightness-95 transition-colors">ℹ️ حول الآلة الحاسبة</button>
+        <button onClick={onOpenSupport} className="w-full bg-gradient-to-br from-green-600/50 to-green-700/60 text-white border border-green-400/80 rounded-xl py-3 font-bold text-lg shadow-[0_5px_12px_rgba(0,0,0,0.35),0_0_18px_rgba(100,220,100,0.35)] mt-3 hover:from-green-600/60 transition-colors">💬 تواصل مع الدعم</button>
       </div>
     </div>
   );
