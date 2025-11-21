@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCalculator } from './hooks/useCalculator';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -34,7 +33,6 @@ function App() {
   const [fontFamily, setFontFamily] = useLocalStorage<string>('calcFontFamily_v2', 'Tajawal');
   const [fontScale, setFontScale] = useLocalStorage<number>('calcFontScale_v2', 1);
   
-  // Custom Color States
   const [buttonTextColor, setButtonTextColor] = useLocalStorage<string | null>('calcButtonTextColor_v1', null);
   const [borderColor, setBorderColor] = useLocalStorage<string | null>('calcBorderColor_v1', null);
   const [numberBtnColor, setNumberBtnColor] = useLocalStorage<string | null>('calcNumberBtnColor_v1', null);
@@ -57,7 +55,6 @@ function App() {
     };
 
     window.addEventListener('beforeinstallprompt', handler);
-
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
@@ -113,7 +110,6 @@ function App() {
       document.documentElement.style.setProperty('--font-scale', String(fontScale));
   }, [fontFamily, fontScale]);
 
-  // Inject Custom Colors
   useEffect(() => {
     if (buttonTextColor) document.documentElement.style.setProperty('--button-text-color-custom', buttonTextColor);
     else document.documentElement.style.removeProperty('--button-text-color-custom');
@@ -144,29 +140,13 @@ function App() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
             setAppUpdate(prev => ({...prev, registration}));
-            
-            // Check if the service worker is active and controlling the page (Offline Ready Check)
-            if (registration.active) {
-                 // If we are just loading and the SW is already active, it means we are offline-ready
-                 // We can optionally check if it's a fresh install to show the toast
-                 if (navigator.serviceWorker.controller) {
-                     // App is controlled. 
-                     // We can use a flag in sessionStorage to show this only once per session if desired, 
-                     // or rely on the SW state change for the first install.
-                 }
-            }
-
             registration.onupdatefound = () => {
                 const installingWorker = registration.installing;
                 if (installingWorker) {
                     installingWorker.onstatechange = () => {
                         if (installingWorker.state === 'installed') {
                             if (navigator.serviceWorker.controller) {
-                                // Update available
                                 setAppUpdate({ available: true, registration });
-                            } else {
-                                // First install completed!
-                                showNotification("تم تحميل الملفات! التطبيق جاهز للعمل بدون إنترنت 📡");
                             }
                         }
                     };
@@ -181,7 +161,7 @@ function App() {
             refreshing = true;
         });
     }
-  }, [showNotification]);
+  }, []);
   
   const closeAllPanels = useCallback(() => {
     setIsSettingsOpen(false);
@@ -232,7 +212,7 @@ function App() {
       }
   };
   
-  const createExportContent = useCallback((history: any[], format: 'txt' | 'csv') => {
+   const createExportContent = useCallback((history: any[], format: 'txt' | 'csv') => {
     const getTaxModeLabel = (mode?: string, rate?: number) => {
         if (!mode) return "غير مفعلة";
         switch (mode) {
@@ -331,6 +311,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ background: 'var(--bg-primary-gradient)' }}>
+
       <div className={`flex justify-center items-center min-h-screen w-full font-sans relative pt-24 pb-8 md:pt-8 transition-all duration-300 ${orientationStyle}`}>
         {appUpdate.available && (
            <div className="absolute top-4 z-20 w-[calc(100%-2rem)] max-w-[420px] bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between animate-fade-in-down">
@@ -388,7 +369,7 @@ function App() {
           onClearHistory={handleClearHistory}
           onHistoryItemClick={(item) => {
              calculator.actions.loadFromHistory(item);
-             setIsHistoryOpen(false); // Auto-close history on selection
+             setIsHistoryOpen(false);
           }}
           onExportHistory={handleExport}
           onExportCsvHistory={handleExport}

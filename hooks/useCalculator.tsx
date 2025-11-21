@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useMemo } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { parseExpression, preprocessExpression } from '../services/calculationEngine';
@@ -118,7 +117,6 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     }
     vibrate(20);
 
-    // If an error was present, start a fresh calculation.
     if (error) {
         setError(null);
         setAiSuggestion(null);
@@ -141,47 +139,42 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     }
 
     setInput(prev => {
-      // Rule: Prevent starting with most operators.
+      // 1. Handling start of input
       if (prev === '0') {
         const forbiddenStarters = ['+', '-', '×', '÷', '%', ')'];
         if (forbiddenStarters.includes(value)) {
             return prev;
         }
         if (value === '.') return '0.';
-        if (value === '00' || value === '000') return '0'; // Prevent multiple 00s at start, keep as single 0
+        // Strict check: do not allow 0, 00, 000 if value is already 0
+        if (value === '00' || value === '000' || value === '0') return '0'; 
         if (value === '(') return '(';
-        return value; // Replace "0" with number
+        return value;
       }
       
       const lastChar = prev.slice(-1);
       const operators = ['+', '-', '×', '÷'];
-      const highPrecedenceOperators = ['×', '÷'];
 
-      // Rule: Prevent operators right after an open parenthesis.
+      // 2. Operator Replacement Logic
+      // If the last character is an operator and the new input is also an operator,
+      // replace the old operator with the new one.
+      if (operators.includes(lastChar) && operators.includes(value)) {
+          return prev.slice(0, -1) + value;
+      }
+
+      // 3. Prevent operators immediately after open parenthesis
       if (lastChar === '(' && ['+', '×', '÷', '%', ')'].includes(value)) {
           return prev;
       }
 
-      // Rule: Prevent duplicate percentage signs
+      // 4. Prevent double percent
       if (value === '%' && lastChar === '%') {
         return prev;
       }
       
-      // Rule: Auto-insert multiplication after a closing parenthesis if a number/paren/ans follows.
+      // 5. Auto-insert multiplication (implicit multiplication)
       if (lastChar === ')' && !operators.concat(['%', ')', '.']).includes(value)) {
           return prev + '×' + value;
-      }
-
-      const isValueAnOperator = operators.includes(value);
-      const isLastCharAnOperator = operators.includes(lastChar);
-      
-      if (isValueAnOperator && isLastCharAnOperator) {
-        // Allow a '-' to follow '×' or '÷' for negative numbers (e.g., 5×- or 10÷-)
-        if (highPrecedenceOperators.includes(lastChar) && value === '-') {
-          return prev + value;
-        }
-        // Otherwise, replace the last operator with the new one (e.g., 5+- becomes 5-)
-        return prev.slice(0, -1) + value;
       }
       
       return prev + value;
@@ -262,7 +255,6 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     if (expression === '0') return;
     try {
       const processedExpr = preprocessExpression(expression);
-      // Replaced lookbehind `(?<=^|\()(\+)` with compatible version `(^|\()(\+)`
       const safeExpr = processedExpr.replace(/×/g, '*').replace(/÷/g, '/').replace(/(^|\()(\+)/g, '$1');
       let result = parseExpression(safeExpr);
 
@@ -293,7 +285,6 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
           }
       }
 
-      // Round to 3 decimal places max for cleaner history
       const taxResult = taxResultValue ? taxResultValue.toLocaleString('en-US', {maximumFractionDigits: 3, useGrouping: false}) : null;
       const taxLabel = taxSettings.mode === 'extract-custom' ? 'الأصل بدون ضريبة' : 'الإجمالي مع الضريبة';
       const now = new Date();
@@ -316,7 +307,6 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
       setLastExpression(expression);
     } catch (e: any) {
         let errorMessage = e.message || 'خطأ غير معروف';
-        // Intercept the generic "Unknown symbol" error and provide a more specific one for percentages.
         if (errorMessage === 'رمز غير معروف' && expression.includes('%')) {
             errorMessage = 'تنسيق النسبة المئوية غير صالح.';
         }
@@ -352,7 +342,6 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     setHistory(prevHistory => prevHistory.filter(item => item.id !== id));
   }, [setHistory]);
 
-  // Updated: Accepts 'HistoryItem | string' to prevent crashes, with extra safety checks
   const loadFromHistory = useCallback((item: HistoryItem | string) => {
     if (!item) return;
     const expression = typeof item === 'string' ? item : (item.expression || '0');
