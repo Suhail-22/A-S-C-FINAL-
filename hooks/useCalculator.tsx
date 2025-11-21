@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useMemo } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { parseExpression, preprocessExpression } from '../services/calculationEngine';
@@ -147,39 +148,56 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
       const isLastOp = operators.includes(lastChar);
       const isInputOp = operators.includes(value);
 
-      // 1. Operator Replacement Logic
+      // --- RULE 1: STRICT OPERATOR REPLACEMENT ---
+      // If last char was an operator and we type another operator, REPLACE IT.
       if (isLastOp && isInputOp) {
           return prev.slice(0, -1) + value;
       }
 
-      // 2. Prevent invalid sequences
-      if (isLastOp && value === '%') return prev; // No % after operator
-      if (lastChar === '(' && (isInputOp || value === '%' || value === ')')) return prev; // No operator/%/) after (
-      if (lastChar === '%' && value === '%') return prev; // No double %
+      // --- RULE 2: BLOCK INVALID PERCENTAGES ---
+      if (value === '%') {
+          // Cannot put % after operator, (, or another %
+          if (isLastOp || lastChar === '(' || lastChar === '%') return prev;
+          if (prev === '0' || prev === '') return prev;
+      }
 
-      // 3. Handle Leading Zeros in Current Number Segment
-      // Split by operators/parens to find the number being typed right now
-      const segments = prev.split(/[+\-×÷()]/);
+      // --- RULE 3: BLOCK OPERATORS AFTER OPEN PAREN ---
+      if (lastChar === '(') {
+          if (isInputOp || value === ')' || value === '%') return prev;
+      }
+
+      // --- RULE 4: IMPLICIT MULTIPLICATION ---
+      // e.g. )5 -> )×5
+      if (lastChar === ')' && !isInputOp && value !== ')' && value !== '%' && value !== '.') {
+         return prev + '×' + value;
+      }
+
+      // --- RULE 5: STRICT LEADING ZERO HANDLING ---
+      // Get the current number segment being typed. 
+      // We split by operators and parentheses to isolate the last number.
+      const segments = prev.split(/[+\-×÷()]/); 
       const currentNum = segments[segments.length - 1];
 
+      // Case A: Current number segment is exactly '0'
       if (currentNum === '0') {
-          // If we have a lone zero, and user types 0, 00, 000 -> Ignore
+          // 1. Ignore multiple zeros (00, 000) if current is just 0
           if (value === '0' || value === '00' || value === '000') return prev;
           
-          // If user types a non-zero digit (1-9), replace the lone zero
-          if (/[1-9]/.test(value)) {
-              return prev.slice(0, -1) + value;
-          }
-          
-          // If user types decimal point, allow it (0.)
+          // 2. Allow decimal point (0.)
           if (value === '.') return prev + '.';
-      }
 
-      // 4. Implicit Multiplication (e.g. )5 -> )×5)
-      if (lastChar === ')' && !isInputOp && value !== ')' && value !== '%' && value !== '.') {
-          return prev + '×' + value;
+          // 3. If typing a digit 1-9, REPLACE the 0 (e.g. 0 -> 5)
+          if (!isInputOp && value !== '%' && value !== ')') {
+               return prev.slice(0, -1) + value;
+          }
       }
       
+      // Case B: Prevent multiple decimals in one number
+      if (value === '.' && currentNum.includes('.')) return prev;
+
+      // Case C: Prevent 00 at the very start if buffer is empty (though init is '0')
+      if (prev === '' && (value === '00' || value === '000')) return '0';
+
       return prev + value;
     });
   }, [calculationExecuted, input, vibrationEnabled, playSound, error]);
