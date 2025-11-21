@@ -45,7 +45,7 @@ function App() {
     setNotification({ message, show: true });
     setTimeout(() => {
       setNotification({ message: '', show: false });
-    }, 2500);
+    }, 3000);
   }, []);
   
   const calculator = useCalculator({ showNotification });
@@ -144,17 +144,36 @@ function App() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
             setAppUpdate(prev => ({...prev, registration}));
+            
+            // Check if the service worker is active and controlling the page (Offline Ready Check)
+            if (registration.active) {
+                 // If we are just loading and the SW is already active, it means we are offline-ready
+                 // We can optionally check if it's a fresh install to show the toast
+                 if (navigator.serviceWorker.controller) {
+                     // App is controlled. 
+                     // We can use a flag in sessionStorage to show this only once per session if desired, 
+                     // or rely on the SW state change for the first install.
+                 }
+            }
+
             registration.onupdatefound = () => {
                 const installingWorker = registration.installing;
                 if (installingWorker) {
                     installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            setAppUpdate({ available: true, registration });
+                        if (installingWorker.state === 'installed') {
+                            if (navigator.serviceWorker.controller) {
+                                // Update available
+                                setAppUpdate({ available: true, registration });
+                            } else {
+                                // First install completed!
+                                showNotification("تم تحميل الملفات! التطبيق جاهز للعمل بدون إنترنت 📡");
+                            }
                         }
                     };
                 }
             };
         });
+        
         let refreshing: boolean;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (refreshing) return;
@@ -162,7 +181,7 @@ function App() {
             refreshing = true;
         });
     }
-  }, []);
+  }, [showNotification]);
   
   const closeAllPanels = useCallback(() => {
     setIsSettingsOpen(false);
@@ -206,23 +225,6 @@ function App() {
         }
     });
   }, [calculator.actions.deleteHistoryItem, showNotification]);
-
-  const onCheckForUpdates = useCallback(() => {
-    if (appUpdate.registration) {
-        appUpdate.registration.update().then(() => {
-            if (appUpdate.registration && (appUpdate.registration.installing || appUpdate.registration.waiting)) {
-                showNotification("تم العثور على تحديث! سيتم التثبيت في الخلفية.");
-                setAppUpdate({ available: true, registration: appUpdate.registration });
-            } else {
-                showNotification("أنت تستخدم أحدث إصدار.");
-            }
-        }).catch(() => {
-            showNotification("فشل التحقق من التحديثات. تحقق من اتصالك بالإنترنت.");
-        });
-    } else {
-        showNotification("خدمة التحديث غير متاحة.");
-    }
-  }, [appUpdate.registration, showNotification]);
 
   const onUpdateAccepted = () => {
       if (appUpdate.registration && appUpdate.registration.waiting) {
@@ -375,7 +377,6 @@ function App() {
 
           onOpenSupport={() => { setIsSettingsOpen(false); setIsSupportOpen(true); }}
           onShowAbout={() => { setIsSettingsOpen(false); setIsAboutOpen(true); }}
-          onCheckForUpdates={onCheckForUpdates}
           deferredPrompt={deferredPrompt}
           onInstallApp={handleInstallClick}
         />
@@ -385,7 +386,10 @@ function App() {
           onClose={() => setIsHistoryOpen(false)} 
           history={calculator.history}
           onClearHistory={handleClearHistory}
-          onHistoryItemClick={calculator.actions.loadFromHistory}
+          onHistoryItemClick={(item) => {
+             calculator.actions.loadFromHistory(item);
+             setIsHistoryOpen(false); // Auto-close history on selection
+          }}
           onExportHistory={handleExport}
           onExportCsvHistory={handleExport}
           onShareHistory={handleShareHistoryText}

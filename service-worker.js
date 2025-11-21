@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'abo-suhail-pro-offline-v2.0.0';
+const CACHE_NAME = 'abo-suhail-pro-offline-v2.1.0';
 
 // Critical external resources that must be cached for offline usage
 const EXTERNAL_RESOURCES = [
@@ -71,26 +71,23 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
 
-  // Strategy: Cache First for HTML (Navigation)
-  // This is critical for PWA start_url to work offline.
+  // Strategy: CACHE FIRST for HTML (Navigation)
+  // This guarantees the app loads offline immediately.
   if (request.mode === 'navigate') {
     event.respondWith(
       caches.match('./index.html').then((cachedResponse) => {
-        // 1. Return cached index.html immediately if found
+        // 1. Return cached index.html immediately if found (OFFLINE READY)
         if (cachedResponse) {
             return cachedResponse;
         }
-        // 2. Fallback: Try to match the request specifically (for root /)
-        return caches.match(request).then(response => {
-            return response || fetch(request).then(netRes => {
-                 // Update cache if network succeeds
-                 const clone = netRes.clone();
-                 caches.open(CACHE_NAME).then(cache => cache.put('./index.html', clone));
-                 return netRes;
-            }).catch(() => {
-                 // 3. Absolute fallback if network fails and not in cache
-                 return caches.match('./index.html');
-            });
+        // 2. Fallback: If not in cache (first load), fetch from network
+        return fetch(request).then(networkResponse => {
+             const clone = networkResponse.clone();
+             caches.open(CACHE_NAME).then(cache => cache.put('./index.html', clone));
+             return networkResponse;
+        }).catch(() => {
+             // 3. Absolute fallback for any navigation error -> try matching root
+             return caches.match('./index.html');
         });
       })
     );
