@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Abo Suhail Calculator</title>
-  <meta name="theme-color" content="#FFFFFF"/>
+  <meta name="theme-color" content="#050A14"/>
   <script src="https://cdn.tailwindcss.com"></script>
   
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
@@ -18,73 +18,55 @@
 
   <style>
     :root {
-      /* --- Light Theme --- */
-      --bg-primary-gradient: linear-gradient(135deg, #F0F4F8, #D9E2EC);
-      --bg-calculator: rgba(255, 255, 255, 0.7);
-      --bg-display: #EDF2F7;
-      --bg-header: rgba(237, 242, 247, 0.5);
-      --bg-panel: rgba(255, 255, 255, 0.95);
-      --text-primary: #1A202C;
-      --text-secondary: #4A5568;
-      --text-display: #1A202C;
-      --border-primary: rgba(0, 0, 0, 0.08);
-      --border-secondary: rgba(0, 0, 0, 0.06);
-      --button-border-color: rgba(0, 0, 0, 0.08);
-      --button-number-bg: linear-gradient(145deg, #E2E8F0, #FFFFFF);
-      --button-function-bg: linear-gradient(145deg, #CBD5E0, #E2E8F0);
-      --button-number-shadow: 0 5px 10px rgba(0,0,0,0.08);
-      --button-number-active-shadow: inset 0 3px 5px rgba(0,0,0,0.1);
-      --bg-inset: rgba(0, 0, 0, 0.05);
-      --bg-inset-light: rgba(0, 0, 0, 0.03);
-      --calculator-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
-      --accent-color: #2B6CB0;
-      --accent-color-contrast: #FFFFFF;
-      --button-function-text-color: #2B6CB0;
-      --accent-equals-bg: linear-gradient(145deg, #38A169, #2F855A);
+      /* --- Restored Classic Design Strict Rules --- */
+      
+      /* 1. Background: Black/Dark Blue */
+      --bg-primary-gradient: linear-gradient(180deg, #000000, #050A14); 
+      --bg-calculator: #050A14; /* Very Dark Blue/Black */
+      
+      /* 2. Buttons: Square Dark Blue */
+      --button-radius: 4px; /* Simple square edges */
+      --button-number-bg: #101B35; /* Dark Blue */
+      --button-function-bg: #1A2B4D; /* Slightly Lighter Blue for operators */
+      
+      --button-border-color: #000000;
+      --button-number-shadow: 0 2px 0 #000000; 
+      --button-number-active-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+      
+      /* 3. Text: Bright Yellow/Gold */
+      --text-primary: #FFD700; /* Pure Gold */
+      --text-secondary: #B0C4DE; /* Light Steel Blue */
+      --button-function-text-color: #FFD700;
+      --button-text-color-custom: #FFD700;
+      --button-text-shadow: none;
+
+      /* 4. Equals Button: Distinct Green */
+      --accent-equals-bg: #00C853; /* Distinct Green */
       --accent-equals-text: #FFFFFF;
-      --accent-equals-shadow: 0 4px 6px -1px rgb(46 125 50 / 0.2), 0 2px 4px -2px rgb(46 125 50 / 0.2);
-      --accent-equals-pulse-shadow: 0 10px 15px -3px rgb(46 125 50 / 0.2), 0 4px 6px -4px rgb(46 125 50 / 0.2);
+      --accent-equals-shadow: 0 2px 0 #006229;
+      --accent-equals-pulse-shadow: none;
+
+      /* 5. Display: Dark with White/Blueish text */
+      --bg-display: #000000;
+      --text-display: #E0FFFF; /* Light Cyan/White */
       --display-text-shadow: none;
-      --button-radius: 1rem;
-    }
-    .dark {
-      /* --- Dark Theme (Restored "Old Design") --- */
-      --bg-primary-gradient: #050510; /* Deep Black/Blue background */
-      --bg-calculator: rgba(10, 20, 35, 0.95);
-      --bg-display: #000000; /* Pitch black display */
-      --bg-header: rgba(20, 40, 60, 0.5);
-      --bg-panel: #0F172A;
-      --text-primary: #FFD700; /* Gold/Yellow Text */
-      --text-secondary: #B0C4DE;
-      --text-display: #FFFFFF;
-      --border-primary: rgba(255, 215, 0, 0.2); /* Goldish border */
-      --border-secondary: rgba(255, 215, 0, 0.1);
-      --button-border-color: rgba(255, 255, 255, 0.1);
+
+      /* Panels & Components */
+      --bg-header: #101B35;
+      --bg-panel: #050A14;
+      --border-primary: #1A2B4D;
+      --border-secondary: #101B35;
       
-      /* Dark Blue Square Buttons */
-      --button-number-bg: linear-gradient(180deg, #0D1B2A, #1B263B); 
-      --button-function-bg: linear-gradient(180deg, #1B263B, #253250);
-      
-      --button-number-shadow: 0 4px 0 #08101a; /* Hard shadow for clicky feel */
-      --button-number-active-shadow: 0 1px 0 #08101a, inset 0 2px 5px rgba(0,0,0,0.5);
-      
-      --bg-inset: rgba(255, 255, 255, 0.05);
-      --bg-inset-light: rgba(255, 255, 255, 0.08);
-      --calculator-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
-      
-      --accent-color: #FFD700; /* Gold Accent */
-      --button-function-text-color: #FFD700; /* Gold symbols */
-      --button-text-color-custom: #FFD700; /* Force numbers to be Gold */
-      
+      /* Accents */
+      --accent-color: #FFD700;
       --accent-color-contrast: #000000;
+
+      /* Misc */
+      --bg-inset: rgba(0, 0, 0, 0.6);
+      --bg-inset-light: rgba(255, 255, 255, 0.05);
+      --calculator-shadow: none;
       
-      /* Distinct Green Equals Button */
-      --accent-equals-bg: linear-gradient(180deg, #00C853, #009624);
-      --accent-equals-text: #FFFFFF;
-      --accent-equals-shadow: 0 4px 0 #00600f;
-      
-      --display-text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-      --button-radius: 0.5rem; /* More square */
+      --font-scale: 1;
     }
     
     html {
@@ -100,7 +82,7 @@
 
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: var(--bg-panel); }
-    ::-webkit-scrollbar-thumb { background-color: var(--accent-color); border-radius: 10px; border: 2px solid var(--bg-panel); }
+    ::-webkit-scrollbar-thumb { background-color: var(--accent-color); border-radius: 2px; border: 1px solid var(--bg-panel); }
     * { scrollbar-width: thin; scrollbar-color: var(--accent-color) var(--bg-panel); }
 
     @keyframes fade-in-down { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }

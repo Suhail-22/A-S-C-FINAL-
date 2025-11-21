@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'abo-suhail-calc-v46-production-fix';
+const CACHE_NAME = 'abo-suhail-calc-v50-ltr-fix';
 
 // CRITICAL FIX: We ONLY cache static assets that definitely exist in the build.
 // We DO NOT cache .tsx files because Vercel converts them to .js bundles.

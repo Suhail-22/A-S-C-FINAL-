@@ -156,21 +156,31 @@ const Display: React.FC<DisplayProps> = ({ input, taxSettings, error, aiSuggesti
     <div className="relative p-4 bg-[var(--bg-display)] rounded-[25px] mb-4 border border-[var(--border-primary)] shadow-[inset_0_4px_10px_rgba(0,0,0,0.08)] min-h-[220px] flex flex-col justify-between landscape:h-full landscape:mb-0 landscape:flex-grow">
       <div className={`absolute inset-0 -z-10 rounded-[22px] transition-all duration-300 ${displayBorderClass}`} />
       <div className="px-1.5 flex flex-col justify-end flex-grow">
-        <div className="text-xl text-[var(--text-secondary)] mb-1 text-left direction-ltr break-all min-h-[30px]" onClick={() => !isCalculationExecuted && setIsEditing(true)}>
+        <div 
+            className="text-xl text-[var(--text-secondary)] mb-1 text-left break-all min-h-[30px]" 
+            dir="ltr" 
+            onClick={() => !isCalculationExecuted && setIsEditing(true)}
+        >
             {isEditing ? (
                  <textarea
                     ref={textareaRef}
                     value={preview || ''}
                     onChange={(e) => onUpdateInput(e.target.value)}
                     onBlur={() => setIsEditing(false)}
-                    className="w-full bg-transparent border-none outline-none resize-none text-xl opacity-70 text-left direction-ltr p-0 m-0 leading-normal text-[var(--text-display)]"
+                    className="w-full bg-transparent border-none outline-none resize-none text-xl opacity-70 text-left p-0 m-0 leading-normal text-[var(--text-display)]"
                     rows={1}
+                    dir="ltr"
                 />
             ) : (
                 renderHighlightedExpression()
             )}
         </div>
-        <div key={liveResult} className={`${fontSizeClass} mt-auto font-bold text-center direction-ltr overflow-x-auto whitespace-nowrap text-[var(--text-display)] scrollbar-hide leading-tight transition-all duration-200`} style={{ textShadow: 'var(--display-text-shadow, none)' }}>
+        <div 
+            key={liveResult} 
+            className={`${fontSizeClass} mt-auto font-bold text-center overflow-x-auto whitespace-nowrap text-[var(--text-display)] scrollbar-hide leading-tight transition-all duration-200`} 
+            style={{ textShadow: 'var(--display-text-shadow, none)' }} 
+            dir="ltr"
+        >
           <span className="inline-block animate-pop-in">{liveResult}</span>
         </div>
       </div>
