@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TaxSettings } from '../types';
 import Icon from './Icon';
@@ -40,7 +39,7 @@ interface SettingsPanelProps {
   onInstallApp?: () => void;
 }
 
-const CACHE_NAME = 'abo-suhail-offline-v8.0.1'; // Must match SW
+const CACHE_NAME = 'abo-suhail-offline-v9.0.0'; // Must match SW
 
 const convertArabicNumerals = (str: string | number): string => {
     if (typeof str !== 'string' && typeof str !== 'number') return '';

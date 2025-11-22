@@ -1,5 +1,4 @@
-
-const CACHE_NAME = 'abo-suhail-offline-v8.0.1';
+const CACHE_NAME = 'abo-suhail-offline-v9.0.0';
 
 const URLS_TO_CACHE = [
   './',
@@ -39,7 +38,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate') {
     event.respondWith((async () => {
       try {
-        // A. Try finding the exact request in cache
+        // A. Try finding the exact request in cache (e.g. '/')
         let cachedResponse = await caches.match(event.request);
         if (cachedResponse) return cachedResponse;
 
