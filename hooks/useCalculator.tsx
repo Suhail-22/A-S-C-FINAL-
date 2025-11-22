@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useMemo } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { parseExpression, preprocessExpression } from '../services/calculationEngine';
@@ -111,7 +110,6 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
   }, [vibrationEnabled, playSound]);
 
   const append = useCallback((value: string) => {
-    // Feedback
     if (['+', '-', '×', '÷'].includes(value)) {
         playSound('operator');
     } else {
@@ -119,7 +117,6 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     }
     vibrate(20);
 
-    // Clear error state if exists
     if (error) {
         setError(null);
         setAiSuggestion(null);
@@ -134,7 +131,6 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
     setAiSuggestion(null);
     setLastExpression(null);
 
-    // If calculation was just executed, start new or append operator
     if (calculationExecuted) {
       const isOperator = ['+', '-', '×', '÷'].includes(value);
       setInput(isOperator ? input + value : value);
@@ -144,59 +140,56 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
 
     setInput(prev => {
       const lastChar = prev.slice(-1);
-      const operators = ['+', '-', '×', '÷'];
-      const isLastOp = operators.includes(lastChar);
-      const isInputOp = operators.includes(value);
+      const isLastOp = ['+', '-', '×', '÷'].includes(lastChar);
+      const isInputOp = ['+', '-', '×', '÷'].includes(value);
 
-      // --- RULE 1: STRICT OPERATOR REPLACEMENT ---
-      // If last char was an operator and we type another operator, REPLACE IT.
+      // 1. STRICT OPERATOR REPLACEMENT
       if (isLastOp && isInputOp) {
           return prev.slice(0, -1) + value;
       }
 
-      // --- RULE 2: BLOCK INVALID PERCENTAGES ---
+      // 2. BLOCK INVALID PERCENTAGES
       if (value === '%') {
-          // Cannot put % after operator, (, or another %
           if (isLastOp || lastChar === '(' || lastChar === '%') return prev;
-          if (prev === '0' || prev === '') return prev;
+          if (prev === '' || prev === '0') return prev;
       }
 
-      // --- RULE 3: BLOCK OPERATORS AFTER OPEN PAREN ---
+      // 3. BLOCK OPERATORS AFTER OPEN PAREN
       if (lastChar === '(') {
           if (isInputOp || value === ')' || value === '%') return prev;
       }
 
-      // --- RULE 4: IMPLICIT MULTIPLICATION ---
-      // e.g. )5 -> )×5
-      if (lastChar === ')' && !isInputOp && value !== ')' && value !== '%' && value !== '.') {
+      // 4. IMPLICIT MULTIPLICATION
+      // If last char is ) or % and input is number or (, add ×
+      if ((lastChar === ')' || lastChar === '%') && !isInputOp && value !== ')' && value !== '%' && value !== '.') {
          return prev + '×' + value;
       }
 
-      // --- RULE 5: STRICT LEADING ZERO HANDLING ---
-      // Get the current number segment being typed. 
-      // We split by operators and parentheses to isolate the last number.
-      const segments = prev.split(/[+\-×÷()]/); 
+      // 5. STRICT LEADING ZERO HANDLING
+      // Split by operators/parens/percent to get current number segment
+      const segments = prev.split(/[+\-×÷()%]/); 
       const currentNum = segments[segments.length - 1];
 
-      // Case A: Current number segment is exactly '0'
-      if (currentNum === '0') {
-          // 1. Ignore multiple zeros (00, 000) if current is just 0
-          if (value === '0' || value === '00' || value === '000') return prev;
-          
-          // 2. Allow decimal point (0.)
-          if (value === '.') return prev + '.';
+      // Case A: Input is Decimal
+      if (value === '.') {
+          if (currentNum.includes('.')) return prev;
+          if (currentNum === '') return prev + '0.';
+          return prev + '.';
+      }
 
-          // 3. If typing a digit 1-9, REPLACE the 0 (e.g. 0 -> 5)
-          if (!isInputOp && value !== '%' && value !== ')') {
-               return prev.slice(0, -1) + value;
+      // Case B: Input is Zero(s)
+      if (value === '0' || value === '00' || value === '000') {
+          if (currentNum === '0') return prev; // Already 0, don't add more
+          if (currentNum === '') return prev + '0'; // Empty -> 0
+          return prev + value;
+      }
+
+      // Case C: Input is Digit 1-9
+      if (/^[1-9]$/.test(value)) {
+          if (currentNum === '0') {
+              return prev.slice(0, -1) + value; // Replace leading 0
           }
       }
-      
-      // Case B: Prevent multiple decimals in one number
-      if (value === '.' && currentNum.includes('.')) return prev;
-
-      // Case C: Prevent 00 at the very start if buffer is empty (though init is '0')
-      if (prev === '' && (value === '00' || value === '000')) return '0';
 
       return prev + value;
     });
@@ -231,11 +224,18 @@ export const useCalculator = ({ showNotification }: UseCalculatorProps) => {
         const openParenCount = (prev.match(/\(/g) || []).length;
         const closeParenCount = (prev.match(/\)/g) || []).length;
         const lastChar = prev.slice(-1);
+
+        // Logic to CLOSE parenthesis
         if (openParenCount > closeParenCount && !['(', '+', '-', '×', '÷'].includes(lastChar)) {
             return prev + ')';
         } else {
+            // Logic to OPEN parenthesis
+            // PREVENT SPAMMING: Max 2 consecutive open parentheses
+            const trailingParens = prev.match(/\(+$/)?.[0].length || 0;
+            if (trailingParens >= 2) return prev;
+
             if (prev === '0') return '(';
-            if (!isNaN(parseInt(lastChar, 10)) || lastChar === ')') {
+            if (!isNaN(parseInt(lastChar, 10)) || lastChar === ')' || lastChar === '%') {
                 return prev + '×(';
             }
             return prev + '(';

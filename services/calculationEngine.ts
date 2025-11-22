@@ -1,7 +1,9 @@
 export function preprocessExpression(expr: string): string {
     if (!expr) return expr;
-    // Handles X% -> (X/100). The logic for %X has been removed as it was considered an error by the user.
+    // Handles X% -> (X/100).
     let pExpr = expr.replace(/(\d+(?:\.\d*)?|\.\d+)%/g, '($1/100)');
+    // NEW: Handle )% -> )/100 to support expressions like (5)%
+    pExpr = pExpr.replace(/\)%/g, ')/100');
     return pExpr;
 }
 
