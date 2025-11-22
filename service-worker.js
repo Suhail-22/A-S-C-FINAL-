@@ -1,8 +1,11 @@
-const CACHE_NAME = 'abo-suhail-offline-v9.0.0';
+const CACHE_NAME = 'abo-suhail-offline-v11.0.0';
+
+// The core file that runs the app
+const APP_SHELL = './index.html';
 
 const URLS_TO_CACHE = [
   './',
-  './index.html',
+  APP_SHELL,
   './manifest.json',
   './assets/icon.svg',
   './offline.html'
@@ -33,50 +36,40 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 1. Navigation (HTML): Robust Cache-First Strategy
-  // If request is for '/', we must check if we have '/' OR 'index.html' cached.
+  // 1. Navigation Strategy (App Shell - Cache First)
+  // CRITICAL FIX: Always serve index.html from cache for navigation.
+  // This prevents "Site cannot be reached" by avoiding network failure on startup.
   if (event.request.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        // A. Try finding the exact request in cache (e.g. '/')
-        let cachedResponse = await caches.match(event.request);
-        if (cachedResponse) return cachedResponse;
-
-        // B. If not found (e.g. requesting '/'), try finding 'index.html'
-        cachedResponse = await caches.match('./index.html');
-        if (cachedResponse) return cachedResponse;
-
-        // C. If neither found, go to network
-        const networkResponse = await fetch(event.request);
-        // Save network response for next time
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(event.request, networkResponse.clone());
-        return networkResponse;
-
-      } catch (error) {
-        // D. If network fails (Offline), show offline.html
-        const offlineResponse = await caches.match('./offline.html');
-        if (offlineResponse) return offlineResponse;
-        
-        // Last resort
-        return new Response('You are offline', { status: 200, headers: { 'Content-Type': 'text/plain' } });
-      }
-    })());
+    event.respondWith(
+      caches.match(APP_SHELL).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        // Only if cache is empty, try network
+        return fetch(APP_SHELL).catch(() => {
+           return caches.match('./offline.html');
+        });
+      })
+    );
     return;
   }
 
-  // 2. Resources (JS, CSS, Fonts): Cache First -> Network Update
+  // 2. Asset Strategy (Stale-While-Revalidate)
+  // For JS, CSS, Images, Fonts
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
-        // Allow opaque responses for CDNs
+        // Cache opaque responses (CDNs) and valid responses
         if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
            const clone = networkResponse.clone();
            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return networkResponse;
-      }).catch(() => {});
+      }).catch(() => {
+          // Network failed, suppress error if we have cache
+      });
       
+      // Return cache if available, otherwise wait for network
       return cachedResponse || fetchPromise;
     })
   );
