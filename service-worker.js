@@ -1,5 +1,4 @@
-
-const CACHE_NAME = 'abo-suhail-offline-v14.0.5';
+const CACHE_NAME = 'abo-suhail-offline-v14.0.8';
 
 // Use absolute paths to ensure they are resolved correctly against the root
 const URLS_TO_CACHE = [
