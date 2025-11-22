@@ -1,12 +1,12 @@
 
-const CACHE_NAME = 'abo-suhail-offline-v7.0.1';
+const CACHE_NAME = 'abo-suhail-offline-v8.0.0';
 
 const URLS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './assets/icon.svg',
-  './index.tsx'
+  './offline.html'
 ];
 
 self.addEventListener('install', (event) => {
@@ -34,23 +34,33 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 1. Navigation (HTML): Network First -> Cache Fallback
+  // 1. Navigation (HTML): Stale-While-Revalidate
+  // This is the KEY FIX for "Site cannot be reached".
+  // It serves the cached index.html IMMEDIATELY, then updates in background.
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(() => {
-          return caches.match('./index.html').then(res => res || caches.match('./'));
-        })
+      caches.match('./index.html').then((cachedResponse) => {
+        // 1. Return cached index.html immediately if found
+        const fetchPromise = fetch(event.request)
+          .then((networkResponse) => {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            return networkResponse;
+          })
+          .catch(() => {
+             // If network fails, we don't care because we (hopefully) returned the cache.
+          });
+
+        // Return cache if available, otherwise fetch, otherwise fallback to offline.html
+        return cachedResponse || fetchPromise || caches.match('./offline.html');
+      }).catch(() => {
+         return caches.match('./offline.html');
+      })
     );
     return;
   }
 
-  // 2. Resources: Cache First -> Network Update
+  // 2. Resources (JS, CSS, Fonts): Cache First -> Network Update
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {

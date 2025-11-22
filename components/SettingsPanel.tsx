@@ -40,7 +40,7 @@ interface SettingsPanelProps {
   onInstallApp?: () => void;
 }
 
-const CACHE_NAME = 'abo-suhail-offline-v7.0.1'; // Must match SW
+const CACHE_NAME = 'abo-suhail-offline-v8.0.0'; // Must match SW
 
 const convertArabicNumerals = (str: string | number): string => {
     if (typeof str !== 'string' && typeof str !== 'number') return '';
@@ -207,6 +207,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
               قم بتحميل حزم الموارد التالية يدوياً لضمان عمل التطبيق بكفاءة عند انقطاع الإنترنت.
           </p>
           
+          <OfflineResourceItem 
+            label="ملفات التطبيق الأساسية (App Shell)" 
+            urls={['./index.html', './manifest.json', './offline.html', './assets/icon.svg']} 
+          />
+
           <OfflineResourceItem 
             label="محرك النظام (React Core)" 
             urls={[
