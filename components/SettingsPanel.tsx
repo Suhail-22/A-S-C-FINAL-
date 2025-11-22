@@ -40,7 +40,7 @@ interface SettingsPanelProps {
   onInstallApp?: () => void;
 }
 
-const CACHE_NAME = 'abo-suhail-offline-v7.0.0'; // Must match SW
+const CACHE_NAME = 'abo-suhail-offline-v7.0.1'; // Must match SW
 
 const convertArabicNumerals = (str: string | number): string => {
     if (typeof str !== 'string' && typeof str !== 'number') return '';
@@ -76,12 +76,23 @@ const OfflineResourceItem = ({ label, urls }: { label: string, urls: string[] })
             let completed = 0;
             for (const url of urls) {
                 try {
-                    // Use no-cors to allow opaque caching of CDNs
-                    await cache.add(new Request(url, { mode: 'no-cors' })); 
+                    // Try fetching with CORS first (best for scripts like Tailwind)
+                    const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
+                    if (response.ok || response.type === 'opaque') {
+                        await cache.put(url, response);
+                    } else {
+                        throw new Error('Network response was not ok');
+                    }
                 } catch (err) {
-                    console.warn('Fetch failed for', url, err);
-                    // Fallback: try simple fetch
-                    await cache.add(url); 
+                    console.warn('CORS Fetch failed for', url, err);
+                    // Fallback: try no-cors
+                    try {
+                        const response = await fetch(url, { mode: 'no-cors', redirect: 'follow' });
+                        await cache.put(url, response);
+                    } catch (innerErr) {
+                         console.error('All fetch attempts failed', innerErr);
+                         throw innerErr;
+                    }
                 }
                 completed++;
                 setProgress(Math.round((completed / urls.length) * 100));
@@ -207,7 +218,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
           />
           <OfflineResourceItem 
             label="ملفات التصميم (Tailwind)" 
-            urls={['https://cdn.tailwindcss.com']} 
+            urls={['https://cdn.tailwindcss.com/3.4.1']} 
           />
           <OfflineResourceItem 
             label="الخطوط العربية (Google Fonts)" 

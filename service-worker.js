@@ -1,4 +1,5 @@
-const CACHE_NAME = 'abo-suhail-offline-v7.0.0';
+
+const CACHE_NAME = 'abo-suhail-offline-v7.0.1';
 
 const URLS_TO_CACHE = [
   './',
@@ -50,8 +51,6 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 2. Resources: Cache First -> Network Update
-  // This ensures that if the user manually downloaded the libraries via Settings,
-  // the SW will find them in the cache and serve them instantly.
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
