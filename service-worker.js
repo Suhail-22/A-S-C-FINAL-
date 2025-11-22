@@ -1,13 +1,14 @@
 
-const CACHE_NAME = 'abo-suhail-offline-v14.0.2';
+const CACHE_NAME = 'abo-suhail-offline-v14.0.4';
 
+// Use relative paths to ensure they are resolved against the SW location
 const URLS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './assets/icon.svg',
   './offline.html',
-  // External Dependencies (CDNs)
+  // External Dependencies (CDNs) - these remain absolute
   'https://cdn.tailwindcss.com/3.4.1',
   'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
   'https://esm.sh/react@18.3.1',
@@ -60,6 +61,10 @@ self.addEventListener('fetch', (event) => {
           // Try index.html
           cachedResponse = await cache.match('./index.html');
           if (cachedResponse) return cachedResponse;
+          
+          // Fallback: try without dots if cached differently (legacy safeguard)
+          cachedResponse = await cache.match('/index.html');
+          if (cachedResponse) return cachedResponse;
 
           // Network
           const networkResponse = await fetch(event.request);
@@ -68,7 +73,10 @@ self.addEventListener('fetch', (event) => {
 
         } catch (error) {
           const cache = await caches.open(CACHE_NAME);
-          return await cache.match('./offline.html');
+          // Try relative offline
+          let offline = await cache.match('./offline.html');
+          if (!offline) offline = await cache.match('/offline.html'); // Fallback
+          return offline;
         }
       })()
     );
