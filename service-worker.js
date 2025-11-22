@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'abo-suhail-offline-v12.0.2';
+const CACHE_NAME = 'abo-suhail-offline-v13.0.0';
 
 const URLS_TO_CACHE = [
   '/',
@@ -25,6 +25,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -42,28 +43,26 @@ self.addEventListener('fetch', (event) => {
         try {
           const cache = await caches.open(CACHE_NAME);
           
-          // Strategy: Try to find the EXACT request in cache
+          // 1. Try exact match
           let cachedResponse = await cache.match(event.request);
           if (cachedResponse) return cachedResponse;
 
-          // Fallback 1: Try to find root '/' (Most likely for SPAs)
+          // 2. Try root '/'
           cachedResponse = await cache.match('/');
           if (cachedResponse) return cachedResponse;
 
-          // Fallback 2: Try to find 'index.html'
+          // 3. Try index.html
           cachedResponse = await cache.match('/index.html');
           if (cachedResponse) return cachedResponse;
 
-          // If not in cache, try network
+          // 4. Network
           const networkResponse = await fetch(event.request);
           cache.put(event.request, networkResponse.clone());
           return networkResponse;
 
         } catch (error) {
-          // If everything fails (Offline & No Cache), show offline page
           const cache = await caches.open(CACHE_NAME);
-          const offlineResponse = await cache.match('/offline.html');
-          return offlineResponse || new Response('Offline', { status: 503, statusText: 'Offline' });
+          return await cache.match('/offline.html');
         }
       })()
     );

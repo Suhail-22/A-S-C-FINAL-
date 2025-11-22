@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { TaxSettings } from '../types';
 import Icon from './Icon';
@@ -39,7 +40,8 @@ interface SettingsPanelProps {
   onInstallApp?: () => void;
 }
 
-const CACHE_NAME = 'abo-suhail-offline-v12.0.0'; // Must match SW
+// CRITICAL: This MUST match the CACHE_NAME in service-worker.js exactly.
+const CACHE_NAME = 'abo-suhail-offline-v13.0.0';
 
 const convertArabicNumerals = (str: string | number): string => {
     if (typeof str !== 'string' && typeof str !== 'number') return '';
@@ -208,7 +210,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
           
           <OfflineResourceItem 
             label="ملفات التطبيق الأساسية (App Shell)" 
-            urls={['/', '/manifest.json', '/offline.html', '/assets/icon.svg']} 
+            urls={['/', '/index.html', '/manifest.json', '/offline.html', '/assets/icon.svg']} 
           />
 
           <OfflineResourceItem 
