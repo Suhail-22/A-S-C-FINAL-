@@ -1,16 +1,16 @@
 
-const CACHE_NAME = 'abo-suhail-offline-v14.0.4';
+const CACHE_NAME = 'abo-suhail-offline-v14.0.5';
 
-// Use relative paths to ensure they are resolved against the SW location
+// Use absolute paths to ensure they are resolved correctly against the root
 const URLS_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.json',
-  './assets/icon.svg',
-  './offline.html',
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/assets/icon.svg',
+  '/offline.html',
   // External Dependencies (CDNs) - these remain absolute
   'https://cdn.tailwindcss.com/3.4.1',
-  'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
+  'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;600;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap',
   'https://esm.sh/react@18.3.1',
   'https://esm.sh/react-dom@18.3.1/client',
   'https://esm.sh/react@18.3.1/',
@@ -54,18 +54,14 @@ self.addEventListener('fetch', (event) => {
           let cachedResponse = await cache.match(event.request);
           if (cachedResponse) return cachedResponse;
 
-          // Try root './'
-          cachedResponse = await cache.match('./');
+          // Try root '/'
+          cachedResponse = await cache.match('/');
           if (cachedResponse) return cachedResponse;
 
-          // Try index.html
-          cachedResponse = await cache.match('./index.html');
-          if (cachedResponse) return cachedResponse;
-          
-          // Fallback: try without dots if cached differently (legacy safeguard)
+          // Try /index.html
           cachedResponse = await cache.match('/index.html');
           if (cachedResponse) return cachedResponse;
-
+          
           // Network
           const networkResponse = await fetch(event.request);
           cache.put(event.request, networkResponse.clone());
@@ -73,9 +69,8 @@ self.addEventListener('fetch', (event) => {
 
         } catch (error) {
           const cache = await caches.open(CACHE_NAME);
-          // Try relative offline
-          let offline = await cache.match('./offline.html');
-          if (!offline) offline = await cache.match('/offline.html'); // Fallback
+          // Try offline.html
+          let offline = await cache.match('/offline.html');
           return offline;
         }
       })()
