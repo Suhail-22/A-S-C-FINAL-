@@ -1,21 +1,19 @@
-const CACHE_NAME = 'abo-suhail-offline-v11.0.0';
-
-// The core file that runs the app
-const APP_SHELL = './index.html';
+const CACHE_NAME = 'abo-suhail-offline-v12.0.0';
 
 const URLS_TO_CACHE = [
-  './',
-  APP_SHELL,
-  './manifest.json',
-  './assets/icon.svg',
-  './offline.html'
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/assets/icon.svg',
+  '/offline.html'
 ];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(URLS_TO_CACHE);
+      // We try to cache both root and index.html to cover all bases
+      return cache.addAll(URLS_TO_CACHE).catch(err => console.log('Pre-cache warning:', err));
     })
   );
 });
@@ -36,40 +34,52 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 1. Navigation Strategy (App Shell - Cache First)
-  // CRITICAL FIX: Always serve index.html from cache for navigation.
-  // This prevents "Site cannot be reached" by avoiding network failure on startup.
+  // 1. Navigation Strategy: Cache First (Root Fallback)
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match(APP_SHELL).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
+      (async () => {
+        try {
+          const cache = await caches.open(CACHE_NAME);
+          
+          // Strategy: Try to find the EXACT request in cache
+          let cachedResponse = await cache.match(event.request);
+          if (cachedResponse) return cachedResponse;
+
+          // Fallback 1: Try to find root '/' (Most likely for SPAs)
+          cachedResponse = await cache.match('/');
+          if (cachedResponse) return cachedResponse;
+
+          // Fallback 2: Try to find 'index.html'
+          cachedResponse = await cache.match('/index.html');
+          if (cachedResponse) return cachedResponse;
+
+          // If not in cache, try network
+          const networkResponse = await fetch(event.request);
+          cache.put(event.request, networkResponse.clone());
+          return networkResponse;
+
+        } catch (error) {
+          // If everything fails (Offline & No Cache), show offline page
+          const cache = await caches.open(CACHE_NAME);
+          const offlineResponse = await cache.match('/offline.html');
+          return offlineResponse || new Response('Offline', { status: 503, statusText: 'Offline' });
         }
-        // Only if cache is empty, try network
-        return fetch(APP_SHELL).catch(() => {
-           return caches.match('./offline.html');
-        });
-      })
+      })()
     );
     return;
   }
 
-  // 2. Asset Strategy (Stale-While-Revalidate)
-  // For JS, CSS, Images, Fonts
+  // 2. Assets Strategy: Stale-While-Revalidate
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
-        // Cache opaque responses (CDNs) and valid responses
         if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
            const clone = networkResponse.clone();
            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return networkResponse;
-      }).catch(() => {
-          // Network failed, suppress error if we have cache
-      });
+      }).catch(() => {});
       
-      // Return cache if available, otherwise wait for network
       return cachedResponse || fetchPromise;
     })
   );

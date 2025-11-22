@@ -4,7 +4,7 @@
   "description": "آلة حاسبة متقدمة وذكية",
   "id": "abosuhail-calculator",
   "scope": "/",
-  "start_url": "./index.html",
+  "start_url": "/",
   "icons": [
     {
       "src": "assets/icon.svg",

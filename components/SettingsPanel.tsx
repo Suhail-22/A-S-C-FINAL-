@@ -39,7 +39,7 @@ interface SettingsPanelProps {
   onInstallApp?: () => void;
 }
 
-const CACHE_NAME = 'abo-suhail-offline-v11.0.0'; // Must match SW
+const CACHE_NAME = 'abo-suhail-offline-v12.0.0'; // Must match SW
 
 const convertArabicNumerals = (str: string | number): string => {
     if (typeof str !== 'string' && typeof str !== 'number') return '';
@@ -208,7 +208,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
           
           <OfflineResourceItem 
             label="ملفات التطبيق الأساسية (App Shell)" 
-            urls={['./index.html', './manifest.json', './offline.html', './assets/icon.svg']} 
+            urls={['/', '/manifest.json', '/offline.html', '/assets/icon.svg']} 
           />
 
           <OfflineResourceItem 
