@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TaxSettings } from '../types';
 import Icon from './Icon';
 
@@ -40,103 +40,11 @@ interface SettingsPanelProps {
   onInstallApp?: () => void;
 }
 
-// CRITICAL: This MUST match the CACHE_NAME in service-worker.js exactly.
-const CACHE_NAME = 'abo-suhail-offline-v13.0.0';
-
 const convertArabicNumerals = (str: string | number): string => {
     if (typeof str !== 'string' && typeof str !== 'number') return '';
     return String(str)
         .replace(/[٠١٢٣٤٥٦٧٨٩]/g, d => String.fromCharCode(d.charCodeAt(0) - 1632))
         .replace(/[۰۱۲۳۴۵۶۷۸۹]/g, d => String.fromCharCode(d.charCodeAt(0) - 1776));
-};
-
-// --- Offline Resource Item Component ---
-const OfflineResourceItem = ({ label, urls }: { label: string, urls: string[] }) => {
-    const [status, setStatus] = useState<'idle' | 'loading' | 'cached' | 'error'>('idle');
-    const [progress, setProgress] = useState(0);
-
-    useEffect(() => {
-        const checkCache = async () => {
-            if (!('caches' in window)) return;
-            try {
-                const cache = await caches.open(CACHE_NAME);
-                // Check if at least the first URL is cached as a proxy for the group
-                const match = await cache.match(urls[0]);
-                if (match) setStatus('cached');
-            } catch (e) { console.error(e); }
-        };
-        checkCache();
-    }, [urls]);
-
-    const handleDownload = async () => {
-        if (!('caches' in window)) return;
-        setStatus('loading');
-        setProgress(10);
-        try {
-            const cache = await caches.open(CACHE_NAME);
-            let completed = 0;
-            for (const url of urls) {
-                try {
-                    // Try fetching with CORS first (best for scripts like Tailwind)
-                    const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
-                    if (response.ok || response.type === 'opaque') {
-                        await cache.put(url, response);
-                    } else {
-                        throw new Error('Network response was not ok');
-                    }
-                } catch (err) {
-                    console.warn('CORS Fetch failed for', url, err);
-                    // Fallback: try no-cors
-                    try {
-                        const response = await fetch(url, { mode: 'no-cors', redirect: 'follow' });
-                        await cache.put(url, response);
-                    } catch (innerErr) {
-                         console.error('All fetch attempts failed', innerErr);
-                         throw innerErr;
-                    }
-                }
-                completed++;
-                setProgress(Math.round((completed / urls.length) * 100));
-            }
-            setStatus('cached');
-        } catch (error) {
-            console.error('Caching failed:', error);
-            setStatus('error');
-        }
-    };
-
-    return (
-        <div className="flex items-center justify-between p-3 bg-[var(--bg-inset)] rounded-lg mb-2 border border-[var(--border-secondary)]">
-            <span className="text-sm text-[var(--text-primary)] font-medium">{label}</span>
-            
-            {status === 'idle' && (
-                <button onClick={handleDownload} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1">
-                    <span>⬇️</span> تحميل
-                </button>
-            )}
-            
-            {status === 'loading' && (
-                <div className="flex flex-col items-end w-24">
-                    <span className="text-xs text-blue-400 animate-pulse mb-1">جاري التحميل...</span>
-                    <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${progress}%` }}></div>
-                    </div>
-                </div>
-            )}
-
-            {status === 'cached' && (
-                <span className="text-green-500 text-sm font-bold flex items-center gap-1 animate-pop-in">
-                    ✅ مثبت
-                </span>
-            )}
-
-            {status === 'error' && (
-                <button onClick={handleDownload} className="text-red-400 text-xs flex items-center gap-1 hover:underline">
-                    ⚠️ فشل (إعادة)
-                </button>
-            )}
-        </div>
-    );
 };
 
 // Helper component for Collapsible Sections
@@ -196,45 +104,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, settings
            </button>
         </div>
       )}
-
-      {/* --- Offline Manager Section --- */}
-      <SettingsSection
-        title="إدارة العمل دون اتصال"
-        icon="📥"
-        isOpen={expandedSection === 'offline'}
-        onToggle={() => toggleSection('offline')}
-      >
-          <p className="text-xs text-[var(--text-secondary)] mb-3 leading-relaxed">
-              قم بتحميل حزم الموارد التالية يدوياً لضمان عمل التطبيق بكفاءة عند انقطاع الإنترنت.
-          </p>
-          
-          <OfflineResourceItem 
-            label="ملفات التطبيق الأساسية (App Shell)" 
-            urls={['/', '/index.html', '/manifest.json', '/offline.html', '/assets/icon.svg']} 
-          />
-
-          <OfflineResourceItem 
-            label="محرك النظام (React Core)" 
-            urls={[
-                'https://esm.sh/react@18.3.1', 
-                'https://esm.sh/react-dom@18.3.1/client',
-                'https://esm.sh/react@18.3.1/', 
-                'https://esm.sh/react-dom@18.3.1/'
-            ]} 
-          />
-          <OfflineResourceItem 
-            label="ملفات التصميم (Tailwind)" 
-            urls={['https://cdn.tailwindcss.com/3.4.1']} 
-          />
-          <OfflineResourceItem 
-            label="الخطوط العربية (Google Fonts)" 
-            urls={['https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cairo:wght@400;700&family=Almarai:wght@400;700&display=swap']} 
-          />
-          
-          <div className="mt-2 text-[10px] text-center text-[var(--text-secondary)] opacity-70">
-              تأكد من تحميل جميع العناصر لضمان تجربة كاملة.
-          </div>
-      </SettingsSection>
 
       {/* --- Appearance & Colors Section --- */}
       <SettingsSection 

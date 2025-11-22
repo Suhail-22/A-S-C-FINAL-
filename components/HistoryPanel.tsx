@@ -75,12 +75,11 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
         date,
         items: data.items,
         total: dailyTotals[date] || 0,
+        // Use the timestamp of the newest item (first in list) for reliable sorting
+        // This avoids issues with parsing localized Arabic date strings
+        latestTimestamp: data.items[0]?.id || 0
     })).sort((a, b) => {
-        const [dayA, monthA, yearA] = a.date.split('/').map(Number);
-        const dateA = new Date(yearA, monthA - 1, dayA);
-        const [dayB, monthB, yearB] = b.date.split('/').map(Number);
-        const dateB = new Date(yearB, monthB - 1, dayB);
-        return dateB.getTime() - dateA.getTime();
+        return b.latestTimestamp - a.latestTimestamp;
     });
   }, [history, searchTerm]);
 

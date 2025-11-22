@@ -4,7 +4,7 @@ import { useCalculator } from '../hooks/useCalculator';
 import Header from './Header';
 import Display from './Display';
 import ButtonGrid from './ButtonGrid';
-import { parseExpression } from '../services/calculationEngine';
+import { parseExpression, preprocessExpression } from '../services/calculationEngine';
 
 interface CalculatorProps {
   calculator: ReturnType<typeof useCalculator>;
@@ -26,7 +26,8 @@ const Calculator: React.FC<CalculatorProps> = ({ calculator, onToggleSettings, o
         resultText = input;
     } else {
         try {
-            const safeExpr = input.replace(/×/g, '*').replace(/÷/g, '/').replace(/%/g, '/100');
+            const processedExpr = preprocessExpression(input);
+            const safeExpr = processedExpr.replace(/×/g, '*').replace(/÷/g, '/').replace(/(^|\()(\+)/g, '$1');
             const liveResult = parseExpression(safeExpr);
             if (!isNaN(liveResult) && isFinite(liveResult)) {
                 resultText = liveResult.toLocaleString('en-US', {maximumFractionDigits: 10, useGrouping: false});

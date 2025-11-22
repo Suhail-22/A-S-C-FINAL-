@@ -1,10 +1,11 @@
+
 {
   "short_name": "Abo Suhail Calc",
   "name": "Abo Suhail Calculator",
   "description": "آلة حاسبة متقدمة وذكية",
   "id": "abosuhail-calculator",
-  "scope": "/",
-  "start_url": "/",
+  "scope": "./",
+  "start_url": "./",
   "icons": [
     {
       "src": "assets/icon.svg",
