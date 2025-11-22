@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'abo-suhail-offline-v8.0.0';
+const CACHE_NAME = 'abo-suhail-offline-v8.0.1';
 
 const URLS_TO_CACHE = [
   './',
@@ -34,29 +34,35 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 1. Navigation (HTML): Stale-While-Revalidate
-  // This is the KEY FIX for "Site cannot be reached".
-  // It serves the cached index.html IMMEDIATELY, then updates in background.
+  // 1. Navigation (HTML): Robust Cache-First Strategy
+  // If request is for '/', we must check if we have '/' OR 'index.html' cached.
   if (event.request.mode === 'navigate') {
-    event.respondWith(
-      caches.match('./index.html').then((cachedResponse) => {
-        // 1. Return cached index.html immediately if found
-        const fetchPromise = fetch(event.request)
-          .then((networkResponse) => {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-            return networkResponse;
-          })
-          .catch(() => {
-             // If network fails, we don't care because we (hopefully) returned the cache.
-          });
+    event.respondWith((async () => {
+      try {
+        // A. Try finding the exact request in cache
+        let cachedResponse = await caches.match(event.request);
+        if (cachedResponse) return cachedResponse;
 
-        // Return cache if available, otherwise fetch, otherwise fallback to offline.html
-        return cachedResponse || fetchPromise || caches.match('./offline.html');
-      }).catch(() => {
-         return caches.match('./offline.html');
-      })
-    );
+        // B. If not found (e.g. requesting '/'), try finding 'index.html'
+        cachedResponse = await caches.match('./index.html');
+        if (cachedResponse) return cachedResponse;
+
+        // C. If neither found, go to network
+        const networkResponse = await fetch(event.request);
+        // Save network response for next time
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(event.request, networkResponse.clone());
+        return networkResponse;
+
+      } catch (error) {
+        // D. If network fails (Offline), show offline.html
+        const offlineResponse = await caches.match('./offline.html');
+        if (offlineResponse) return offlineResponse;
+        
+        // Last resort
+        return new Response('You are offline', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+      }
+    })());
     return;
   }
 
@@ -64,6 +70,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // Allow opaque responses for CDNs
         if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
            const clone = networkResponse.clone();
            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
