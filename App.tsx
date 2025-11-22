@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCalculator } from './hooks/useCalculator';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -371,8 +372,8 @@ function App() {
              calculator.actions.loadFromHistory(item);
              setIsHistoryOpen(false);
           }}
-          onExportHistory={handleExport}
-          onExportCsvHistory={handleExport}
+          onExportHistory={(start, end) => handleExport('txt', start, end)}
+          onExportCsvHistory={(start, end) => handleExport('csv', start, end)}
           onShareHistory={handleShareHistoryText}
           onUpdateHistoryItemNote={calculator.actions.updateHistoryItemNote}
           onDeleteItem={handleDeleteHistoryItem}
