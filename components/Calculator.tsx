@@ -58,7 +58,8 @@ const Calculator: React.FC<CalculatorProps> = ({ calculator, onToggleSettings, o
           className="bg-[var(--bg-calculator)] rounded-[var(--button-radius)] p-4 w-full h-full relative backdrop-blur-xl z-10 border border-[var(--border-primary)] flex flex-col landscape:flex-row-reverse landscape:gap-6"
           style={{ boxShadow: 'var(--calculator-shadow, none)' }}
         >
-        {/* Left Side (in Landscape RTL + reverse): Header + Display */}
+        {/* Child 1: Header + Display */}
+        {/* In RTL + flex-row-reverse: This element goes to the LEFT */}
         <div className="flex flex-col landscape:w-1/2 landscape:h-full justify-center">
             <Header
             taxSettings={taxSettings}
@@ -80,7 +81,8 @@ const Calculator: React.FC<CalculatorProps> = ({ calculator, onToggleSettings, o
             />
         </div>
 
-        {/* Right Side (in Landscape RTL + reverse): Button Grid */}
+        {/* Child 2: Button Grid */}
+        {/* In RTL + flex-row-reverse: This element goes to the RIGHT */}
         <div className="landscape:w-1/2 landscape:h-full landscape:flex landscape:flex-col landscape:justify-center">
             <ButtonGrid
             onAppend={actions.append}
