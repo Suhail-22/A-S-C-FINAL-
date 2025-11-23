@@ -25,7 +25,6 @@ function App() {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [notification, setNotification] = useState({ message: '', show: false });
-  const [appUpdate, setAppUpdate] = useState<{ available: boolean; registration: ServiceWorkerRegistration | null }>({ available: false, registration: null });
   const [confirmation, setConfirmation] = useState<ConfirmationState>({ isOpen: false, onConfirm: () => {}, onCancel: () => {}, title: '', message: '' });
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
@@ -135,34 +134,6 @@ function App() {
     else document.documentElement.style.removeProperty('--bg-calculator-custom');
   }, [calcBgColor]);
 
-
-   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(registration => {
-            setAppUpdate(prev => ({...prev, registration}));
-            registration.onupdatefound = () => {
-                const installingWorker = registration.installing;
-                if (installingWorker) {
-                    installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed') {
-                            if (navigator.serviceWorker.controller) {
-                                setAppUpdate({ available: true, registration });
-                            }
-                        }
-                    };
-                }
-            };
-        });
-        
-        let refreshing: boolean;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (refreshing) return;
-            window.location.reload();
-            refreshing = true;
-        });
-    }
-  }, []);
-  
   const closeAllPanels = useCallback(() => {
     setIsSettingsOpen(false);
     setIsHistoryOpen(false);
@@ -206,12 +177,6 @@ function App() {
     });
   }, [calculator.actions.deleteHistoryItem, showNotification]);
 
-  const onUpdateAccepted = () => {
-      if (appUpdate.registration && appUpdate.registration.waiting) {
-          appUpdate.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-  };
-  
    const createExportContent = useCallback((history: any[], format: 'txt' | 'csv') => {
     const getTaxModeLabel = (mode?: string, rate?: number) => {
         if (!mode) return "غير مفعلة";
@@ -313,15 +278,6 @@ function App() {
     <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ background: 'var(--bg-primary-gradient)' }}>
 
       <div className={`flex justify-center items-center min-h-screen w-full font-sans relative pt-24 pb-8 md:pt-8 transition-all duration-300 ${orientationStyle}`}>
-        {appUpdate.available && (
-           <div className="absolute top-4 z-20 w-[calc(100%-2rem)] max-w-[420px] bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between animate-fade-in-down">
-             <div>
-               <h4 className="font-bold">✨ تحديث جديد جاهز!</h4>
-               <p className="text-xs opacity-90 mt-1">نسخة أحدث وأسرع متاحة الآن.</p>
-             </div>
-             <button onClick={onUpdateAccepted} className="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-100 transition-colors">تحديث</button>
-           </div>
-        )}
 
         <Calculator 
           calculator={calculator}
