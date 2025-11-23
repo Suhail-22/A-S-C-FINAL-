@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { useCalculator } from '../hooks/useCalculator';
 import Header from './Header';
@@ -56,11 +55,11 @@ const Calculator: React.FC<CalculatorProps> = ({ calculator, onToggleSettings, o
   return (
     <div className="relative w-full z-10 animate-container-in mx-auto h-full">
       <div 
-          className="bg-[var(--bg-calculator)] rounded-[var(--button-radius)] p-4 w-full h-full relative backdrop-blur-xl z-10 border border-[var(--border-primary)] flex flex-col landscape:flex-row-reverse landscape:gap-6"
+          className="bg-[var(--bg-calculator)] rounded-[var(--button-radius)] p-4 w-full h-full relative backdrop-blur-xl z-10 border border-[var(--border-primary)] flex flex-col landscape:flex-row landscape:gap-6"
           style={{ boxShadow: 'var(--calculator-shadow, none)' }}
         >
         {/* Left Side (in Landscape): Header + Display */}
-        {/* Note: In RTL + flex-row-reverse, this comes visually on the LEFT */}
+        {/* Note: In RTL + flex-row, this comes visually on the RIGHT (Start) */}
         <div className="flex flex-col landscape:w-1/2 landscape:h-full justify-center">
             <Header
             taxSettings={taxSettings}
@@ -83,7 +82,7 @@ const Calculator: React.FC<CalculatorProps> = ({ calculator, onToggleSettings, o
         </div>
 
         {/* Right Side (in Landscape): Button Grid */}
-        {/* Note: In RTL + flex-row-reverse, this comes visually on the RIGHT */}
+        {/* Note: In RTL + flex-row, this comes visually on the LEFT (End) */}
         <div className="landscape:w-1/2 landscape:h-full landscape:flex landscape:flex-col landscape:justify-center">
             <ButtonGrid
             onAppend={actions.append}
