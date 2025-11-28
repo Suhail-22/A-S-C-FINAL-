@@ -1,35 +1,26 @@
-
 {
-  "short_name": "Abo Suhail Calc",
   "name": "Abo Suhail Calculator",
-  "description": "آلة حاسبة متقدمة وذكية",
-  "id": "abosuhail-calculator",
-  "scope": "./",
-  "start_url": "./",
+  "short_name": "ASC Calculator",
+  "description": "حاسبة متقدمة تعمل بدون اتصال بالإنترنت",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050A14",
+  "theme_color": "#050A14",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "ar", 
+  "dir": "rtl",
+  "categories": ["utilities", "productivity"],
   "icons": [
     {
-      "src": "assets/icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any"
-    },
-    {
-      "src": "assets/icon.svg",
-      "type": "image/svg+xml",
+      "src": "assets/icon-192x192.png",
       "sizes": "192x192",
-      "purpose": "maskable"
+      "type": "image/png"
     },
     {
-      "src": "assets/icon.svg",
-      "type": "image/svg+xml",
+      "src": "assets/icon-512x512.png", 
       "sizes": "512x512",
-      "purpose": "maskable"
+      "type": "image/png"
     }
-  ],
-  "display": "standalone",
-  "orientation": "portrait",
-  "dir": "rtl",
-  "theme_color": "#050A14",
-  "background_color": "#050A14",
-  "lang": "ar",
-  "prefer_related_applications": false
+  ]
 }
