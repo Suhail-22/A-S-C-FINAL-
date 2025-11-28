@@ -12,7 +12,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Tailwind CSS CDN to ensure UI renders correctly in preview -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -21,9 +20,6 @@
         extend: {
           fontFamily: {
             sans: ['Tajawal', 'sans-serif'],
-          },
-          colors: {
-            // Mapping custom variables if needed, but CSS variables in index.css handle most
           }
         }
       }
@@ -45,5 +41,19 @@
 <body>
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
+  
+  <!-- ✅ سكريبت تسجيل الـ Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          .then(registration => {
+            console.log('✅ SW registered!');
+            registration.update();
+          })
+          .catch(error => console.log('❌ SW failed:', error));
+      });
+    }
+  </script>
 </body>
 </html>
